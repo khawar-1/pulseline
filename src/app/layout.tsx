@@ -1,31 +1,35 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Mono, IBM_Plex_Sans, Instrument_Serif } from "next/font/google";
+import { Fraunces, JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 
 import "./globals.css";
 
 /**
- * Instrument Serif carries the wordmark, section headings and the KPI numerals
- * — high-contrast lining figures are what make a number look considered rather
- * than generated. Plex reads as technical instrumentation where a grotesque
- * would read as a SaaS marketing page, and it ships with a matched mono for
- * lead ids, timestamps and raw payloads.
+ * Font stack upgrade:
+ * - Fraunces: optical serif for the wordmark, KPI numerals, and display moments.
+ *   A variable-weight serif with a distinctive personality — premium without being
+ *   stuffy. Used by luxury and editorial brands.
+ * - Plus Jakarta Sans: the body/UI font. Modern geometric sans with excellent
+ *   legibility at small sizes and a premium feel. Used extensively in high-end
+ *   SaaS products.
+ * - JetBrains Mono: purpose-built for code/data readability. Ligatures off so
+ *   lead IDs, timestamps, and tool names stay unambiguous.
  */
-const display = Instrument_Serif({
-  variable: "--font-instrument-serif",
-  weight: "400",
+const display = Fraunces({
+  variable: "--font-display",
+  weight: "variable",
   subsets: ["latin"],
   display: "swap",
 });
 
-const sans = IBM_Plex_Sans({
-  variable: "--font-plex-sans",
-  weight: ["400", "500", "600"],
+const sans = Plus_Jakarta_Sans({
+  variable: "--font-sans",
+  weight: ["400", "500", "600", "700"],
   subsets: ["latin"],
   display: "swap",
 });
 
-const mono = IBM_Plex_Mono({
-  variable: "--font-plex-mono",
+const mono = JetBrains_Mono({
+  variable: "--font-mono",
   weight: ["400", "500"],
   subsets: ["latin"],
   display: "swap",
@@ -38,7 +42,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f2f4f6",
+  themeColor: "#f0f2f5",
 };
 
 export default function RootLayout({

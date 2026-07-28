@@ -15,10 +15,10 @@ export function AgentText({ text }: { text: string }) {
   const flush = () => {
     if (bullets.length === 0) return;
     blocks.push(
-      <ul key={`ul-${blocks.length}`} className="my-1.5 space-y-1 pl-1">
+      <ul key={`ul-${blocks.length}`} className="my-2 space-y-1.5 pl-0.5">
         {bullets.map((item, index) => (
-          <li key={index} className="flex gap-2">
-            <span className="mt-[0.45em] size-1 shrink-0 rounded-full bg-slate" aria-hidden />
+          <li key={index} className="flex gap-2.5">
+            <span className="mt-[0.5em] size-1.5 shrink-0 rounded-full bg-pine/40" aria-hidden />
             <span>{inline(item)}</span>
           </li>
         ))}

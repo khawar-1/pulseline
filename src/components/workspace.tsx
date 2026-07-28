@@ -39,22 +39,31 @@ export function Workspace({
   const chat = useAgentChat({ onSettled });
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col animate-fade-in">
       {loadError && (
-        <p className="shrink-0 border-b border-crimson/30 bg-crimson-tint px-4 py-2 font-mono text-[0.75rem] text-crimson">
+        <p className="shrink-0 border-b border-crimson/30 bg-crimson-tint/80 px-4 py-2 font-mono text-[0.75rem] text-crimson backdrop-blur-sm">
           {loadError}
         </p>
       )}
 
       {/* Mobile chrome. A squeezed two-pane is worse than either pane alone, so
           below lg they stack behind a toggle instead of being compressed. */}
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-line bg-panel px-4 py-2.5 lg:hidden">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-line bg-panel/80 px-4 py-2.5 backdrop-blur-md lg:hidden">
         <Wordmark />
+        {/* Pill-shaped tab toggle */}
         <div
-          className="flex rounded-md border border-line p-0.5"
+          className="relative flex rounded-full border border-line bg-paper p-0.5"
           role="tablist"
           aria-label="Pane"
         >
+          {/* Sliding pill indicator */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0.5 w-[calc(50%-2px)] rounded-full bg-ink transition-transform duration-250 ease-out"
+            style={{
+              transform: mobileView === "panel" ? "translateX(calc(100% + 2px))" : "translateX(2px)",
+            }}
+          />
           {(["console", "panel"] as const).map((view) => (
             <button
               key={view}
@@ -62,8 +71,8 @@ export function Workspace({
               role="tab"
               aria-selected={mobileView === view}
               onClick={() => setMobileView(view)}
-              className={`rounded-[3px] px-2.5 py-1 text-[0.75rem] font-medium capitalize transition-colors ${
-                mobileView === view ? "bg-ink text-white" : "text-slate"
+              className={`relative z-10 rounded-full px-3.5 py-1 text-[0.75rem] font-medium capitalize transition-colors duration-200 ${
+                mobileView === view ? "text-white" : "text-slate"
               }`}
             >
               {view}

@@ -16,32 +16,37 @@
 
 @theme {
   /* Core palette */
-  --color-ink: #0c1116; /* text, trace stroke — a blue-black, never neutral */
-  --color-paper: #f2f4f6; /* page ground, the colour of a printed ECG strip */
-  --color-panel: #ffffff; /* raised surfaces: instruments mounted on a panel */
-  --color-pine: #124e4a; /* brand primary + booked/success */
-  --color-amber: #c88a04; /* attention: contacted, responded, mid scores */
-  --color-crimson: #a81237; /* stopped: compliance violation, lost */
-  --color-slate: #6b7785; /* secondary text, axis labels, timestamps */
+  --color-ink: #0c1116;
+  --color-paper: #f0f2f5;
+  --color-panel: #ffffff;
+  --color-pine: #124e4a;
+  --color-pine-mid: #1a6b65;
+  --color-amber: #c88a04;
+  --color-crimson: #a81237;
+  --color-slate: #6b7785;
 
-  /* Derived — rules, hairlines and tints, all mixed from the seven above */
+  /* Derived — rules, hairlines and tints */
   --color-line: #e3e7ea;
   --color-line-strong: #cfd6dc;
   --color-pine-tint: #e8efee;
+  --color-pine-dark: #0c3533;
   --color-amber-tint: #faf2df;
   --color-crimson-tint: #f8e5ea;
   --color-slate-tint: #eceff2;
 
-  --font-display: var(--font-instrument-serif), ui-serif, Georgia, serif;
-  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", monospace;
+  /* Monitor background — dark ECG screen */
+  --color-monitor: #0c1116;
+  --color-monitor-surface: #141b22;
 
-  /* Instruments have crisp corners. */
-  --radius: 0.375rem;
+  --font-display: var(--font-display), ui-serif, Georgia, serif;
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, "SF Mono", monospace;
+
+  --radius: 0.5rem;
+  --radius-pill: 9999px;
 }
 
-/* Bridge: shadcn/base-ui components read these, so restyling the tokens
- * restyles the components rather than leaving the stock look in place. */
+/* Bridge: shadcn/base-ui components */
 @theme inline {
   --color-background: var(--color-paper);
   --color-foreground: var(--color-ink);
@@ -62,18 +67,60 @@
   --color-input: var(--color-line-strong);
   --color-ring: var(--color-pine);
 
-  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-sm: calc(var(--radius) * 0.55);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-2xl: calc(var(--radius) * 2);
 }
 
 :root {
-  /* Single-theme by design. Declaring it keeps native controls, scrollbars and
-   * form widgets from flipping dark and breaking the instrument metaphor. */
   color-scheme: light;
 }
+
+/* ---------------------------------------------------------------------------
+ * Keyframe animations
+ * ------------------------------------------------------------------------- */
+
+@keyframes fade-slide-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes score-pop {
+  0%   { transform: scale(1.35); opacity: 0.7; }
+  60%  { transform: scale(0.96); }
+  100% { transform: scale(1);    opacity: 1;   }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%       { opacity: 0.6; transform: scale(1.2); }
+}
+
+@keyframes breath-glow {
+  0%, 100% { opacity: 0.55; }
+  50%       { opacity: 1;    }
+}
+
+@keyframes float-up {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-3px); }
+}
+
+/* ---------------------------------------------------------------------------
+ * Base layer
+ * ------------------------------------------------------------------------- */
 
 @layer base {
   * {
@@ -83,20 +130,23 @@
   html {
     @apply font-sans;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
   }
 
   body {
     @apply bg-paper text-ink;
     font-feature-settings: "cv05" 1;
+    /* Premium dot-grid texture — the signature of top-tier dashboards.
+       Very subtle: 1px dots every 28px on a transparent base. */
+    background-image: radial-gradient(circle, #c8ced4 1px, transparent 1px);
+    background-size: 28px 28px;
   }
 
-  /* Keyboard focus has to be unmistakable on a dense surface, so it is a solid
-   * pine ring with an offset rather than a subtle glow. */
   :focus-visible {
     outline: 2px solid var(--color-pine);
     outline-offset: 2px;
-    border-radius: 2px;
+    border-radius: 3px;
   }
 
   ::selection {
@@ -105,49 +155,132 @@
   }
 }
 
+/* ---------------------------------------------------------------------------
+ * Component utilities
+ * ------------------------------------------------------------------------- */
+
 @layer components {
-  /* Tabular lining figures. Numbers in a column must not shimmy as they
-   * update, which they will during a live KPI recompute. */
+
+  /* Tabular lining figures */
   .numeric {
     font-variant-numeric: tabular-nums lining-nums;
   }
 
-  /* The label style used across the panel: small, spaced, slate. */
+  /* Panel label */
   .label {
-    @apply font-sans text-[0.625rem] font-medium uppercase tracking-[0.14em] text-slate;
+    @apply font-sans text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-slate;
   }
 
-  /* Faint horizontal ruling, like graph paper under the instruments. */
-  .ruled {
-    background-image: repeating-linear-gradient(
-      to bottom,
-      var(--color-line) 0px,
-      var(--color-line) 1px,
-      transparent 1px,
-      transparent 28px
-    );
-  }
-
+  /* Slim scrollbar */
   .scrollbar-slim {
     scrollbar-width: thin;
     scrollbar-color: var(--color-line-strong) transparent;
   }
-  .scrollbar-slim::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+  .scrollbar-slim::-webkit-scrollbar       { width: 4px; height: 4px; }
+  .scrollbar-slim::-webkit-scrollbar-thumb { background: var(--color-line-strong); border-radius: 999px; }
+  .scrollbar-slim::-webkit-scrollbar-track { background: transparent; }
+
+  /* ---------------------------------------------------------------------------
+   * Glass morphism surfaces
+   * ------------------------------------------------------------------------- */
+  .glass {
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(16px) saturate(1.8);
+    -webkit-backdrop-filter: blur(16px) saturate(1.8);
+    border: 1px solid rgba(255, 255, 255, 0.6);
   }
-  .scrollbar-slim::-webkit-scrollbar-thumb {
-    background: var(--color-line-strong);
-    border-radius: 999px;
+
+  .glass-dark {
+    background: rgba(12, 17, 22, 0.85);
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
-  .scrollbar-slim::-webkit-scrollbar-track {
-    background: transparent;
+
+  /* ---------------------------------------------------------------------------
+   * Elevated card
+   * ------------------------------------------------------------------------- */
+  .card-elevated {
+    background: var(--color-panel);
+    border: 1px solid rgba(227, 231, 234, 0.8);
+    border-radius: var(--radius);
+    box-shadow:
+      0 1px 2px rgba(12, 17, 22, 0.04),
+      0 4px 16px rgba(12, 17, 22, 0.06),
+      0 0 0 1px rgba(255, 255, 255, 0.95) inset;
+  }
+
+  .card-elevated-hover {
+    transition: box-shadow 0.22s ease, transform 0.22s ease;
+  }
+  .card-elevated-hover:hover {
+    box-shadow:
+      0 2px 4px rgba(12, 17, 22, 0.06),
+      0 10px 28px rgba(12, 17, 22, 0.10),
+      0 0 0 1px rgba(255, 255, 255, 0.95) inset;
+    transform: translateY(-1px);
+  }
+
+  /* ---------------------------------------------------------------------------
+   * Glow utilities
+   * ------------------------------------------------------------------------- */
+  .glow-pine    { box-shadow: 0 0 0 3px rgba(18, 78, 74, 0.15), 0 0 16px rgba(18, 78, 74, 0.10); }
+  .glow-amber   { box-shadow: 0 0 0 3px rgba(200, 138, 4, 0.15), 0 0 16px rgba(200, 138, 4, 0.10); }
+  .glow-crimson { box-shadow: 0 0 0 3px rgba(168, 18, 55, 0.15), 0 0 16px rgba(168, 18, 55, 0.10); }
+
+  /* ---------------------------------------------------------------------------
+   * Pine gradient
+   * ------------------------------------------------------------------------- */
+  .bg-pine-gradient {
+    background: linear-gradient(135deg, #0c3533 0%, #124e4a 55%, #1a6b65 100%);
+  }
+
+  .text-pine-gradient {
+    background: linear-gradient(135deg, #0c3533 0%, #1a6b65 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * Gradient divider — fades horizontally, premium section separator
+   * ------------------------------------------------------------------------- */
+  .gradient-rule {
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--color-line) 20%, var(--color-line) 80%, transparent);
+    border: none;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * Entrance animations
+   * ------------------------------------------------------------------------- */
+  .animate-fade-slide-up { animation: fade-slide-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .animate-fade-in       { animation: fade-in 0.3s ease both; }
+  .animate-score-pop     { animation: score-pop 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .animate-pulse-dot     { animation: pulse-dot 2s ease-in-out infinite; }
+  .animate-breath        { animation: breath-glow 2.5s ease-in-out infinite; }
+  .animate-float         { animation: float-up 3s ease-in-out infinite; }
+
+  /* Filter pill — reusable across score and date filters */
+  .filter-pill {
+    @apply rounded-full px-3 py-1 font-mono text-[0.65rem] font-medium transition-all duration-150;
+  }
+  .filter-pill-inactive {
+    @apply border border-line bg-panel/90 text-slate hover:border-line-strong hover:bg-panel hover:text-ink;
+  }
+  .filter-pill-active {
+    @apply bg-ink text-white shadow-[0_2px_8px_rgba(12,17,22,0.2)];
+  }
+
+  /* Search input — shared style */
+  .search-input {
+    @apply w-full rounded-xl border border-line bg-panel/90 px-4 py-2.5 text-[0.8125rem] text-ink placeholder:text-slate/40 outline-none transition-all duration-200 focus:border-pine/50 focus:bg-panel focus:shadow-[0_0_0_3px_rgba(18,78,74,0.09)];
   }
 }
 
-/* Motion is limited to three moments: the trace drawing on load, a lead row
- * travelling between stages, and a score counting up. Anyone who has asked the
- * OS to stop moving things gets none of them. */
+/* ---------------------------------------------------------------------------
+ * Reduced motion
+ * ------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
