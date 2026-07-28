@@ -1,0 +1,8 @@
+{
+  "node_version": "20",
+  "dependencies": ["."],
+  "graphs": {
+    "pulseline": "./src/agent/graph.ts:graph"
+  },
+  "env": ".env.local"
+}
