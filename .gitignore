@@ -57,6 +57,7 @@ next-env.d.ts
 .windsurf/
 .aider*
 CLAUDE.md
+AGENT.md
 AGENTS.md
 .plans/
 scratch/

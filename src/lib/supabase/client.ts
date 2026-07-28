@@ -1,21 +1,33 @@
-"use client";
-
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 /**
- * Browser Supabase client, anon key only.
+ * Anon-key Supabase client — the read path.
  *
- * Used for two things: the initial pipeline read and the Realtime subscription
- * that makes the agent's tool writes appear in the UI without polling. RLS
- * grants this key select-only access, so it cannot mutate anything even though
- * the key ships to the browser.
+ * Used by the browser for the pipeline read and the Realtime subscription, and
+ * by the server render for the initial snapshot. Deliberately the *same* client
+ * in both places: the page you see on first paint comes through exactly the RLS
+ * policies the browser is held to, so a policy mistake shows up immediately
+ * rather than only after hydration.
+ *
+ * Writes never go through here. Every mutation runs server-side under the
+ * service-role client in `server.ts`.
  */
 
-let client: SupabaseClient | null = null;
+let browserClient: SupabaseClient | null = null;
+
+/**
+ * Whether the anon credentials were present at build time. These are inlined
+ * by Next, so this is a constant — cheap enough to read during render, which
+ * lets the UI start in the right state instead of correcting itself after an
+ * effect throws.
+ */
+export function hasSupabaseEnv(): boolean {
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  );
+}
 
 export function supabaseBrowser(): SupabaseClient {
-  if (client) return client;
-
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -25,6 +37,12 @@ export function supabaseBrowser(): SupabaseClient {
     );
   }
 
-  client = createClient(url, anonKey);
-  return client;
+  // The browser keeps one client so there is a single Realtime socket. On the
+  // server a fresh client per request avoids sharing state across requests.
+  if (typeof window === "undefined") {
+    return createClient(url, anonKey, { auth: { persistSession: false } });
+  }
+
+  browserClient ??= createClient(url, anonKey);
+  return browserClient;
 }

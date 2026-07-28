@@ -80,6 +80,13 @@ stored. They cannot drift out of sync with the pipeline they describe.
   few lines and cannot half-fail.
 - **No auth.** Public demo, synthetic data, RLS grants the browser read-only
   access, and every write goes through a server route holding the service-role key.
+- **Realtime is a notification, not a data source.** A change on `leads`,
+  `followups` or `stage_events` triggers a debounced refetch of the whole
+  snapshot rather than a local patch from the change payload. The working set is
+  a few dozen rows, so a refetch is one round trip and cannot drift from
+  Postgres, whereas applying deltas by hand has to get every ordering and
+  missed-event case right. The KPI view is derived and has to be re-read after
+  any change anyway; once you are re-reading that, re-reading the rest is free.
 - **`deepseek-chat` as the model, reached through its OpenAI-compatible
   endpoint.** The harness takes a LangChain chat model, so the provider is one
   constructor in `src/agent/graph.ts` and nothing downstream knows or cares.
@@ -87,6 +94,48 @@ stored. They cannot drift out of sync with the pipeline they describe.
   the model behaving. The schema requirement, the reviewer subagent, and the
   deterministic linter hold regardless of which model is behind them — which is
   exactly the property you want when the model is a swappable dependency.
+
+---
+
+## The interface
+
+Two panes, always both visible on desktop: the **console** on the left, the
+**panel** on the right. That is the load-bearing decision. An account manager
+has to watch the pipeline change *while* the agent explains itself — putting
+the pipeline behind a tab would turn every claim the agent makes into something
+you have to go and verify.
+
+The panes share no state beyond which campaign is selected. The console streams
+from the agent endpoint; the panel reads Postgres over Supabase Realtime. They
+agree because neither trusts anything but the database — so if the transcript
+and the panel ever disagree, the panel is right.
+
+**The Pulse Trace** is the signature element and it is real data, not
+decoration: one ECG complex per row in `stage_events`, **amplitude set by that
+lead's score**, colour set by the stage it moved into, and a downward spike when
+a lead is lost. Flat line between events, so a campaign nobody is working
+literally flatlines. It cannot be lifted onto another product without being
+rebuilt, which was the point.
+
+**The console narrates rather than logs.** Every tool gets a written line —
+"scored 78 / 100 · Lakeshore Dermatology · capped from 84" — and two cases get
+expanded treatment because they are the product: a delegation to a subagent
+(with the subagent's own output and tool calls nested inside it, which is the
+clearest proof the harness really splits the work) and a compliance outcome,
+where a blocked message is shown struck through beside the specific rules it
+broke and the note that nothing was written.
+
+**Motion is limited to three moments** — the trace drawing itself on load, a
+lead row travelling to its new stage group, and a score counting up the first
+time a lead is scored. All three are suppressed under `prefers-reduced-motion`.
+Focus is a solid 2px pine ring rather than a subtle glow, because the surface is
+dense. Below `lg` the panes stack behind a toggle instead of being compressed —
+a squeezed two-pane is worse than either pane alone.
+
+Palette: `#0C1116` graphite, `#F2F4F6` chart, `#124E4A` pine, `#C88A04` amber,
+`#A81237` crimson, `#6B7785` slate. Colour is bound to domain meaning, never
+used decoratively — crimson only ever means *stopped*. Instrument Serif for the
+wordmark and KPI numerals, IBM Plex Sans and Mono for everything else.
 
 ---
 
@@ -142,6 +191,16 @@ src/agent/knowledge/*.md     practice playbooks + compliance rules (mounted to V
 src/lib/supabase/            service-role and anon clients, DB types
 src/app/api/chat/route.ts    streaming agent endpoint
 scripts/verify-harness.ts    headless end-to-end verification
+
+src/app/page.tsx             server-rendered first snapshot
+src/components/workspace.tsx the two-pane shell
+src/components/console-pane  transcript, tool cards, composer
+src/components/panel-pane    campaign switcher, trace, KPIs, pipeline
+src/components/pulse-trace   the signature element
+src/lib/console.ts           tool -> human narration
+src/lib/pipeline.ts          stage/score vocabulary, shared by every component
+src/hooks/use-pipeline.ts    Realtime subscription + debounced refetch
+src/hooks/use-agent-chat.ts  SSE client for /api/chat
 ```
 
 ### The tools
