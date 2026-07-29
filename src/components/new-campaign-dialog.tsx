@@ -19,6 +19,9 @@ export function NewCampaignDialog({ onCreated }: { onCreated?: (campaignId: stri
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Set right after a successful create — shows the "wire it to a form" step instead of just closing. */
+  const [created, setCreated] = useState<{ id: string; practiceName: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const [practiceName, setPracticeName] = useState("");
   const [practiceType, setPracticeType] = useState<PracticeType>("dermatology");
@@ -63,13 +66,19 @@ export function NewCampaignDialog({ onCreated }: { onCreated?: (campaignId: stri
         return;
       }
       onCreated?.(json.campaign.id);
-      reset();
-      setOpen(false);
+      setCreated({ id: json.campaign.id, practiceName: json.campaign.practice_name });
     } catch {
       setError("Network error — could not reach the server.");
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const close = () => {
+    setOpen(false);
+    setCreated(null);
+    setCopied(false);
+    reset();
   };
 
   return (
@@ -86,10 +95,12 @@ export function NewCampaignDialog({ onCreated }: { onCreated?: (campaignId: stri
         <div className="fixed inset-0 z-50 overflow-y-auto bg-ink/40 backdrop-blur-sm px-4 py-8">
           <div className="mx-auto w-full max-w-md rounded-2xl border border-line bg-paper p-5 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-[0.9375rem] font-semibold text-ink">New campaign</h3>
+              <h3 className="text-[0.9375rem] font-semibold text-ink">
+                {created ? "Campaign created" : "New campaign"}
+              </h3>
               <button
                 type="button"
-                onClick={() => { setOpen(false); reset(); }}
+                onClick={close}
                 className="rounded-lg px-2 py-1 text-slate/60 hover:bg-slate-tint/60 hover:text-ink"
                 aria-label="Close"
               >
@@ -97,6 +108,19 @@ export function NewCampaignDialog({ onCreated }: { onCreated?: (campaignId: stri
               </button>
             </div>
 
+            {created ? (
+              <CreatedPanel
+                practiceName={created.practiceName}
+                copied={copied}
+                onCopy={() => {
+                  void navigator.clipboard.writeText(created.practiceName).then(() => {
+                    setCopied(true);
+                  });
+                }}
+                onDone={close}
+              />
+            ) : (
+            <>
             <div className="space-y-3">
               <Field label="Practice name">
                 <input
@@ -170,7 +194,7 @@ export function NewCampaignDialog({ onCreated }: { onCreated?: (campaignId: stri
             <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
-                onClick={() => { setOpen(false); reset(); }}
+                onClick={close}
                 className="rounded-lg border border-line px-3.5 py-2 text-sm font-medium text-slate hover:bg-slate-tint/60"
               >
                 Cancel
@@ -184,10 +208,58 @@ export function NewCampaignDialog({ onCreated }: { onCreated?: (campaignId: stri
                 {submitting ? "Creating…" : "Create campaign"}
               </button>
             </div>
+            </>
+            )}
           </div>
         </div>
       )}
     </>
+  );
+}
+
+function CreatedPanel({
+  practiceName,
+  copied,
+  onCopy,
+  onDone,
+}: {
+  practiceName: string;
+  copied: boolean;
+  onCopy: () => void;
+  onDone: () => void;
+}) {
+  return (
+    <div className="space-y-3.5">
+      <p className="text-[0.8125rem] leading-relaxed text-ink/80">
+        <span className="font-semibold text-pine">{practiceName}</span> is live in the
+        pipeline. To connect a real Google Form to it, set the Apps Script&apos;s{" "}
+        <code className="rounded bg-slate-tint px-1 py-0.5 font-mono text-[0.75rem]">CAMPAIGN_NAME</code>{" "}
+        to the exact name below — no id to look up anywhere.
+      </p>
+      <div className="flex items-center gap-2 rounded-lg border border-line bg-panel px-3 py-2">
+        <code className="flex-1 truncate font-mono text-[0.8125rem] text-ink">{practiceName}</code>
+        <button
+          type="button"
+          onClick={onCopy}
+          className="shrink-0 rounded-md border border-line px-2 py-1 text-[0.7rem] font-medium text-slate hover:bg-slate-tint/60"
+        >
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+      <p className="text-[0.75rem] leading-relaxed text-slate/70">
+        See <code className="font-mono">docs/apps-script/README.md</code> for the full
+        one-time setup (paste the script, set the shared secret, wire the trigger).
+      </p>
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={onDone}
+          className="rounded-lg bg-pine-gradient px-3.5 py-2 text-sm font-semibold text-white shadow-[0_2px_12px_rgba(18,78,74,0.38)]"
+        >
+          Done
+        </button>
+      </div>
+    </div>
   );
 }
 

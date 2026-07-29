@@ -10,7 +10,13 @@
  */
 function onFormSubmit(e) {
   var WEBHOOK_URL = "https://your-app.vercel.app/api/webhooks/forms";
-  var CAMPAIGN_ID = "44444444-4444-4444-8444-000000000004"; // Pulseline Live Demo
+  // Match this EXACTLY to the campaign's practice name as typed into the
+  // "New campaign" form in the dashboard -- the webhook looks it up by name
+  // (case-insensitive), so there's no id to find or copy anywhere. Leave
+  // CAMPAIGN_NAME blank and set CAMPAIGN_ID instead if you'd rather target
+  // by id (find it via Supabase's table editor).
+  var CAMPAIGN_NAME = "Pulseline Live Demo";
+  var CAMPAIGN_ID = "";
   var SECRET = PropertiesService.getScriptProperties().getProperty("PULSELINE_WEBHOOK_SECRET");
   // Recording-day trick, not a general mechanism: pin a fixed session id so
   // you can point the console at ?session=<this value> BEFORE submitting the
@@ -31,12 +37,16 @@ function onFormSubmit(e) {
   });
 
   var payload = {
-    campaign_id: CAMPAIGN_ID,
     response_id: e.response.getId(),
     full_name: answers.full_name || "",
     phone: answers.phone || "",
     reason: answers.reason || "",
   };
+  if (CAMPAIGN_ID) {
+    payload.campaign_id = CAMPAIGN_ID;
+  } else if (CAMPAIGN_NAME) {
+    payload.campaign_name = CAMPAIGN_NAME;
+  }
   if (PINNED_SESSION_ID) {
     payload.session_id = PINNED_SESSION_ID;
   }

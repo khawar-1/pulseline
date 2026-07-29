@@ -11,9 +11,15 @@ One-time setup to make a real Google Form trigger the live automation.
 2. **Open the script editor**: in the Form, Extensions -> Apps Script. Paste
    the contents of `pulseline-webhook.gs` into `Code.gs`, replacing the
    placeholder `WEBHOOK_URL` with your deployed origin
-   (`https://<your-app>.vercel.app/api/webhooks/forms`) and `CAMPAIGN_ID`
-   with the live-demo campaign's id if you changed it from the seeded
-   `44444444-4444-4444-8444-000000000004`.
+   (`https://<your-app>.vercel.app/api/webhooks/forms`) and `CAMPAIGN_NAME`
+   with the *exact* practice name of the campaign this form should feed --
+   whatever you typed into "Practice name" when creating it via "+ New
+   campaign" in the dashboard (case doesn't matter, the rest of the string
+   does). The webhook looks the campaign up by that name; there's no id to
+   go find anywhere. If you'd rather target by id instead (e.g. you have two
+   campaigns with the same practice name), leave `CAMPAIGN_NAME` blank and
+   set `CAMPAIGN_ID` to the row's id from Supabase's table editor -- an
+   explicit id always wins over a name if both are set.
 
 3. **Set the shared secret**: Project Settings (gear icon) -> Script
    Properties -> Add property `PULSELINE_WEBHOOK_SECRET`, value matching

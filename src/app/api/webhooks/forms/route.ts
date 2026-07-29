@@ -50,12 +50,46 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const campaignId =
-    (typeof body.campaign_id === "string" && body.campaign_id) ||
-    process.env.LIVE_DEMO_CAMPAIGN_ID;
+  // campaign_id is the precise way to target a campaign, but nothing in the
+  // UI ever surfaces a campaign's id for someone to copy into a form's setup
+  // -- campaign_name is the practical path: the account manager already
+  // typed that name when creating the campaign, so a form can name its
+  // target the same way a human would, with no id-copying step at all.
+  let campaignId = typeof body.campaign_id === "string" ? body.campaign_id : null;
+
+  if (!campaignId && typeof body.campaign_name === "string" && body.campaign_name.trim()) {
+    const { data: match, error: lookupError } = await supabaseAdmin()
+      .from("campaigns")
+      .select("id")
+      .ilike("practice_name", body.campaign_name.trim())
+      .maybeSingle();
+
+    if (lookupError) {
+      return Response.json(
+        { error: `Campaign lookup failed: ${lookupError.message}` },
+        { status: 500 },
+      );
+    }
+    if (!match) {
+      return Response.json(
+        {
+          error:
+            `No campaign named "${body.campaign_name}". Create it in the dashboard first ` +
+            "(the name must match exactly), or check for a typo.",
+        },
+        { status: 400 },
+      );
+    }
+    campaignId = (match as { id: string }).id;
+  }
+
+  campaignId ??= process.env.LIVE_DEMO_CAMPAIGN_ID ?? null;
   if (!campaignId) {
     return Response.json(
-      { error: "campaign_id is required (or set LIVE_DEMO_CAMPAIGN_ID)." },
+      {
+        error:
+          "campaign_id or campaign_name is required (or set LIVE_DEMO_CAMPAIGN_ID).",
+      },
       { status: 400 },
     );
   }
