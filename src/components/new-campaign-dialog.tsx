@@ -83,8 +83,8 @@ export function NewCampaignDialog({ onCreated }: { onCreated?: (campaignId: stri
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-sm px-4">
-          <div className="w-full max-w-md rounded-2xl border border-line bg-paper p-5 shadow-xl">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-ink/40 backdrop-blur-sm px-4 py-8">
+          <div className="mx-auto w-full max-w-md rounded-2xl border border-line bg-paper p-5 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-[0.9375rem] font-semibold text-ink">New campaign</h3>
               <button

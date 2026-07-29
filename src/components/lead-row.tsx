@@ -11,7 +11,6 @@ import {
   leadName,
   scoreLabel,
   scoreTone,
-  shortId,
   timeAgo,
 } from "@/lib/pipeline";
 import type { Followup, Lead, StageEvent } from "@/lib/supabase/types";
@@ -128,10 +127,6 @@ export function LeadRow({
             )}
           </span>
           <span className="mt-0.5 flex items-center gap-1.5 text-[0.75rem] text-slate/70">
-            <span className="font-mono text-[0.6rem] text-slate/50">
-              {shortId(lead.id)}
-            </span>
-            <span aria-hidden className="text-slate/30">·</span>
             <span className="truncate">
               {parsed?.reason ?? parsed?.intent ?? "not parsed yet"}
             </span>
