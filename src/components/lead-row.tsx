@@ -52,14 +52,19 @@ export function LeadRow({
   const latest = followups[0];
   const blocked = parsed?.needs_human_review === true;
 
+  // Left-border accent class keyed by score tone
+  const accentClass =
+    tone === "pine"    ? "lead-accent-pine"
+    : tone === "amber"  ? "lead-accent-amber"
+    : tone === "crimson" ? "lead-accent-crimson"
+    : "lead-accent-slate";
+
   return (
     <motion.li
       layout={reduceMotion ? false : "position"}
-      // Motion 2 of 3 — a lead travels to its new stage group rather than
-      // teleporting, so you can see which lead moved without re-reading the list.
       layoutId={lead.id}
       transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-      className="border-b border-line/60 last:border-b-0"
+      className={`border-b border-line/60 last:border-b-0 ${accentClass}`}
     >
       <button
         type="button"
@@ -112,7 +117,7 @@ export function LeadRow({
         {/* Lead info */}
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2 flex-wrap">
-            <span className="truncate text-[0.875rem] font-semibold text-ink">
+            <span className="truncate text-[0.9rem] font-bold text-ink tracking-tight">
               {leadName(lead)}
             </span>
             {blocked && (
@@ -126,7 +131,7 @@ export function LeadRow({
               </span>
             )}
           </span>
-          <span className="mt-0.5 flex items-center gap-1.5 text-[0.75rem] text-slate/70">
+          <span className="mt-0.5 flex items-center gap-1.5 text-[0.75rem] text-slate/60">
             <span className="truncate">
               {parsed?.reason ?? parsed?.intent ?? "not parsed yet"}
             </span>

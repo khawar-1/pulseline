@@ -86,12 +86,41 @@ export function StageRail({
 
   if (groups.length === 0) {
     return (
-      <div className="rounded-xl border-2 border-dashed border-line-strong px-4 py-12 text-center">
-        <p className="text-sm text-slate/50">
-          {isFiltered ? "No leads match your filters." : "No leads in this campaign."}
-        </p>
-        {isFiltered && (
-          <p className="mt-1 font-mono text-[0.7rem] text-slate/40">Try broadening your search.</p>
+      <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-line-strong/60 bg-panel/40 px-6 py-14 text-center">
+        {isFiltered ? (
+          <>
+            <svg
+              width="28" height="28" viewBox="0 0 24 24" fill="none"
+              className="text-slate/25" aria-hidden
+            >
+              <circle cx="10.5" cy="10.5" r="7" stroke="currentColor" strokeWidth="1.4"/>
+              <path d="M16 16L21 21" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+              <path d="M8 10.5h5M10.5 8v5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+            </svg>
+            <div>
+              <p className="text-[0.875rem] font-semibold text-ink/60">No leads match</p>
+              <p className="mt-0.5 font-mono text-[0.7rem] text-slate/40">
+                Try broadening your filters
+              </p>
+            </div>
+          </>
+        ) : (
+          <>
+            <svg
+              width="28" height="28" viewBox="0 0 24 24" fill="none"
+              className="text-slate/25" aria-hidden
+            >
+              <rect x="3" y="6" width="18" height="14" rx="2.5" stroke="currentColor" strokeWidth="1.4"/>
+              <path d="M7 10h10M7 14h6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+              <path d="M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6" stroke="currentColor" strokeWidth="1.4"/>
+            </svg>
+            <div>
+              <p className="text-[0.875rem] font-semibold text-ink/60">No leads yet</p>
+              <p className="mt-0.5 font-mono text-[0.7rem] text-slate/40">
+                Run the agent to process your first lead
+              </p>
+            </div>
+          </>
         )}
       </div>
     );

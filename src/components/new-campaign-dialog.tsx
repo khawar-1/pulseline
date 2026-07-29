@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { AD_SOURCE_LABEL, PRACTICE_LABEL } from "@/lib/pipeline";
 import { AD_SOURCES, PRACTICE_TYPES, type AdSource, type PracticeType } from "@/lib/supabase/types";
@@ -22,6 +23,11 @@ export function NewCampaignDialog({ onCreated }: { onCreated?: (campaignId: stri
   /** Set right after a successful create — shows the "wire it to a form" step instead of just closing. */
   const [created, setCreated] = useState<{ id: string; practiceName: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const [practiceName, setPracticeName] = useState("");
   const [practiceType, setPracticeType] = useState<PracticeType>("dermatology");
@@ -86,13 +92,14 @@ export function NewCampaignDialog({ onCreated }: { onCreated?: (campaignId: stri
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="shrink-0 rounded-full border border-dashed border-line px-3.5 py-2 text-left text-[0.8125rem] font-semibold text-slate transition-all duration-200 hover:border-pine/40 hover:bg-pine-tint/40 hover:text-pine"
+        className="group flex shrink-0 items-center gap-1.5 rounded-lg border border-dashed border-line-strong/70 px-3 py-1.5 font-mono text-[0.65rem] font-semibold text-slate/60 transition-all duration-200 hover:border-pine/50 hover:bg-pine-tint/30 hover:text-pine"
       >
-        + New campaign
+        <span className="text-[0.8rem] leading-none transition-transform duration-200 group-hover:rotate-90">+</span>
+        New campaign
       </button>
 
-      {open && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-ink/40 backdrop-blur-sm px-4 py-8">
+      {open && mounted && createPortal(
+        <div className="fixed inset-0 z-[100] overflow-y-auto bg-ink/40 backdrop-blur-sm px-4 py-8">
           <div className="mx-auto w-full max-w-md rounded-2xl border border-line bg-paper p-5 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-[0.9375rem] font-semibold text-ink">
@@ -203,7 +210,7 @@ export function NewCampaignDialog({ onCreated }: { onCreated?: (campaignId: stri
                 type="button"
                 onClick={submit}
                 disabled={submitting}
-                className="rounded-lg bg-pine-gradient px-3.5 py-2 text-sm font-semibold text-white shadow-[0_2px_12px_rgba(18,78,74,0.38)] disabled:opacity-50"
+                className="rounded-lg bg-pine-gradient px-3.5 py-2 text-sm font-semibold text-white shadow-[0_2px_12px_rgba(26,74,60,0.38)] disabled:opacity-50"
               >
                 {submitting ? "Creating…" : "Create campaign"}
               </button>
@@ -211,7 +218,8 @@ export function NewCampaignDialog({ onCreated }: { onCreated?: (campaignId: stri
             </>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
@@ -254,7 +262,7 @@ function CreatedPanel({
         <button
           type="button"
           onClick={onDone}
-          className="rounded-lg bg-pine-gradient px-3.5 py-2 text-sm font-semibold text-white shadow-[0_2px_12px_rgba(18,78,74,0.38)]"
+          className="rounded-lg bg-pine-gradient px-3.5 py-2 text-sm font-semibold text-white shadow-[0_2px_12px_rgba(26,74,60,0.38)]"
         >
           Done
         </button>

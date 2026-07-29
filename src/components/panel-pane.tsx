@@ -133,25 +133,28 @@ export function PanelPane({
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-paper">
-      {/* Glass header */}
-      <header className="shrink-0 border-b border-line/60 bg-panel/78 px-5 py-4 backdrop-blur-md">
-        <div className="mb-3.5 flex items-center justify-between gap-3">
-          <h2 className="label">Panel</h2>
+      {/* Tab header — underline style, Linear / Vercel pattern */}
+      <header className="shrink-0 border-b border-line/60 bg-panel/90 backdrop-blur-md">
+        {/* Top row: title + live badge */}
+        <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-0">
+          <span className="section-label">Pipeline Monitor</span>
           <LiveBadge status={status} />
         </div>
+
+        {/* Campaign tabs — scroll horizontally on small screens */}
         <div
-          className="scrollbar-slim -mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5"
+          className="scrollbar-slim -mb-px flex overflow-x-auto"
           role="tablist"
           aria-label="Campaign"
         >
-          <CampaignChip
+          <CampaignTab
             active={campaignId === ALL_CAMPAIGNS}
             onClick={() => onSelectCampaign(ALL_CAMPAIGNS)}
             title="All campaigns"
             subtitle={`${snapshot.campaigns.length} practices`}
           />
           {snapshot.campaigns.map((campaign) => (
-            <CampaignChip
+            <CampaignTab
               key={campaign.id}
               active={campaignId === campaign.id}
               onClick={() => onSelectCampaign(campaign.id)}
@@ -161,7 +164,10 @@ export function PanelPane({
               }`}
             />
           ))}
-          <NewCampaignDialog onCreated={onSelectCampaign} />
+          {/* New campaign — dashed card at end of tab row */}
+          <div className="flex shrink-0 items-center px-3 pb-1">
+            <NewCampaignDialog onCreated={onSelectCampaign} />
+          </div>
         </div>
       </header>
 
@@ -173,7 +179,7 @@ export function PanelPane({
             <div
               aria-hidden
               className="pointer-events-none absolute -inset-4 -z-10 rounded-3xl opacity-30 blur-2xl"
-              style={{ background: "radial-gradient(ellipse at 50% 60%, rgba(18,78,74,0.18) 0%, transparent 70%)" }}
+              style={{ background: "radial-gradient(ellipse at 50% 60%, rgba(26,74,60,0.18) 0%, transparent 70%)" }}
             />
             <PulseTrace events={scope.events} leads={scope.leads} />
           </div>
@@ -192,23 +198,19 @@ export function PanelPane({
         {/* Pipeline section */}
         <div className="px-5 pb-6">
           <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="label">
-              Pipeline
-              {isFiltered ? (
-                <span className="ml-2 normal-case tracking-normal font-mono text-[0.65rem]">
-                  {filteredLeads.length} of {scope.leads.length} leads
-                </span>
-              ) : (
-                <span className="ml-2 normal-case tracking-normal font-mono text-[0.65rem]">
-                  {scope.leads.length} leads
-                </span>
-              )}
-            </h2>
+            <span className="section-label">
+              Leads
+              <span className="ml-2 font-mono text-[0.6rem] text-slate/30">
+                {isFiltered
+                  ? `${filteredLeads.length} of ${scope.leads.length}`
+                  : scope.leads.length}
+              </span>
+            </span>
             {isFiltered && (
               <button
                 type="button"
                 onClick={clearAll}
-                className="font-mono text-[0.65rem] text-slate/50 transition-colors hover:text-pine"
+                className="font-mono text-[0.6rem] text-slate/40 transition-colors hover:text-pine"
               >
                 Clear all ×
               </button>
@@ -307,7 +309,7 @@ export function PanelPane({
   );
 }
 
-function CampaignChip({
+function CampaignTab({
   active, onClick, title, subtitle,
 }: {
   active: boolean; onClick: () => void; title: string; subtitle: string;
@@ -318,16 +320,16 @@ function CampaignChip({
       role="tab"
       aria-selected={active}
       onClick={onClick}
-      className={`group shrink-0 rounded-full px-3.5 py-2 text-left transition-all duration-200 ${
-        active
-          ? "bg-pine-gradient text-white shadow-[0_2px_12px_rgba(18,78,74,0.38),0_0_0_1px_rgba(18,78,74,0.12)]"
-          : "border border-line bg-panel/90 text-ink hover:border-pine/25 hover:bg-pine-tint/50 hover:shadow-sm"
-      }`}
+      className={`campaign-tab ${active ? "campaign-tab-active" : ""}`}
     >
-      <span className="block text-[0.8125rem] font-semibold leading-tight">{title}</span>
-      <span className={`block text-[0.6875rem] leading-tight mt-0.5 ${active ? "text-white/65" : "text-slate"}`}>
-        {subtitle}
+      <span
+        className={`campaign-tab-name ${
+          active ? "font-display text-[1rem] text-ink" : ""
+        }`}
+      >
+        {title}
       </span>
+      <span className="campaign-tab-sub">{subtitle}</span>
     </button>
   );
 }

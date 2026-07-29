@@ -96,7 +96,7 @@ export function ConsolePane({
                 case "user":
                   return (
                     <div key={item.id} className="flex justify-end animate-fade-slide-up">
-                      <p className="max-w-[82%] rounded-2xl rounded-br-sm bg-pine-gradient px-4 py-2.5 text-[0.875rem] leading-relaxed text-white shadow-[0_2px_12px_rgba(18,78,74,0.28)]">
+                      <p className="max-w-[82%] rounded-2xl rounded-br-sm bg-pine-gradient px-4 py-2.5 text-[0.875rem] leading-relaxed text-white shadow-[0_2px_12px_rgba(26,74,60,0.28)]">
                         {item.text}
                       </p>
                     </div>
@@ -149,7 +149,7 @@ export function ConsolePane({
         <div
           className={`overflow-hidden rounded-xl border bg-paper transition-all duration-200 ${
             focused
-              ? "border-pine/50 shadow-[0_0_0_3px_rgba(18,78,74,0.10)]"
+              ? "border-pine/50 shadow-[0_0_0_3px_rgba(26,74,60,0.10)]"
               : "border-line-strong"
           }`}
         >
@@ -187,7 +187,7 @@ export function ConsolePane({
                 type="button"
                 onClick={submit}
                 disabled={!draft.trim()}
-                className="group relative overflow-hidden rounded-lg bg-pine-gradient px-4 py-1.5 font-sans text-[0.75rem] font-medium text-white shadow-[0_2px_8px_rgba(18,78,74,0.30)] transition-all duration-200 hover:shadow-[0_4px_16px_rgba(18,78,74,0.40)] hover:-translate-y-px active:translate-y-0 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-0"
+                className="group relative overflow-hidden rounded-lg bg-pine-gradient px-4 py-1.5 font-sans text-[0.75rem] font-medium text-white shadow-[0_2px_8px_rgba(26,74,60,0.30)] transition-all duration-200 hover:shadow-[0_4px_16px_rgba(26,74,60,0.40)] hover:-translate-y-px active:translate-y-0 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-0"
               >
                 {/* Shimmer sweep on hover */}
                 <span

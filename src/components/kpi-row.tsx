@@ -92,10 +92,10 @@ function KpiCard({
 }) {
   return (
     <div
-      className={`group relative overflow-hidden rounded-xl border border-line/80 bg-panel px-4 py-4 transition-all duration-200 hover:shadow-[0_4px_20px_rgba(12,17,22,0.09)] hover:-translate-y-px ${
+      className={`group relative overflow-hidden rounded-xl border border-line/80 bg-panel px-4 py-4 transition-all duration-200 hover:shadow-[0_4px_20px_rgba(22,16,10,0.09)] hover:-translate-y-px ${
         emphasis
-          ? "border-pine/20 shadow-[0_1px_3px_rgba(12,17,22,0.05),0_4px_16px_rgba(18,78,74,0.07)]"
-          : "shadow-[0_1px_3px_rgba(12,17,22,0.04),0_4px_12px_rgba(12,17,22,0.05)]"
+          ? "border-pine/20 shadow-[0_1px_3px_rgba(22,16,10,0.05),0_4px_16px_rgba(26,74,60,0.07)]"
+          : "shadow-[0_1px_3px_rgba(22,16,10,0.04),0_4px_12px_rgba(22,16,10,0.05)]"
       }`}
     >
       {/* Pine gradient wash on emphasis card */}
@@ -103,7 +103,7 @@ function KpiCard({
         <span
           aria-hidden
           className="pointer-events-none absolute inset-0 opacity-[0.06] transition-opacity duration-300 group-hover:opacity-[0.10]"
-          style={{ background: "linear-gradient(135deg, #124e4a 0%, transparent 65%)" }}
+          style={{ background: "linear-gradient(135deg, #1a4a3c 0%, transparent 65%)" }}
         />
       )}
 

@@ -15,62 +15,71 @@
  * ------------------------------------------------------------------------- */
 
 @theme {
-  /* Core palette */
-  --color-ink: #0c1116;
-  --color-paper: #f0f2f5;
-  --color-panel: #ffffff;
-  --color-pine: #124e4a;
-  --color-pine-mid: #1a6b65;
-  --color-amber: #c88a04;
-  --color-crimson: #a81237;
-  --color-slate: #6b7785;
+  /* ---------------------------------------------------------------------------
+   * Luxury warm palette — private banking instrument aesthetic.
+   *
+   * Warm ivory ground instead of cold grey: the single biggest premium signal.
+   * Deep forest green anchor: rich, not trendy teal.
+   * Champagne gold accent: muted and expensive, not harsh traffic-light yellow.
+   * Warm ink instead of near-black: feels like high-quality print.
+   * ------------------------------------------------------------------------- */
 
-  /* Derived — rules, hairlines and tints */
-  --color-line: #e3e7ea;
-  --color-line-strong: #cfd6dc;
-  --color-pine-tint: #e8efee;
-  --color-pine-dark: #0c3533;
-  --color-amber-tint: #faf2df;
-  --color-crimson-tint: #f8e5ea;
-  --color-slate-tint: #eceff2;
+  /* Core */
+  --color-ink:    #16100a;   /* warm deep brown-black, like high-quality ink  */
+  --color-paper:  #f7f4ef;   /* warm ivory — Hermès/Bloomberg light, not grey  */
+  --color-panel:  #fdfcf9;   /* warm white — card surface                      */
+  --color-pine:   #1a4a3c;   /* deep forest green — richer, cooler, more stoic */
+  --color-pine-mid: #246b58; /* mid forest for gradient transitions             */
+  --color-amber:  #a07228;   /* champagne gold — muted, expensive               */
+  --color-crimson:#9b1239;   /* arterial red — unchanged semantics              */
+  --color-slate:  #7a7060;   /* warm slate — matches the ivory ground           */
 
-  /* Monitor background — dark ECG screen */
-  --color-monitor: #0c1116;
-  --color-monitor-surface: #141b22;
+  /* Derived */
+  --color-line:        #e8e2d9;   /* warm hairline                              */
+  --color-line-strong: #d4cab8;   /* warm strong border                         */
+  --color-pine-tint:   #e7eeea;   /* pale forest wash                           */
+  --color-pine-dark:   #0f2e24;   /* very dark forest for gradients             */
+  --color-amber-tint:  #f8f1e2;   /* warm champagne wash                        */
+  --color-crimson-tint:#f7e5ea;   /* unchanged                                  */
+  --color-slate-tint:  #ede9e2;   /* warm muted surface                         */
+
+  /* ECG monitor — unchanged, dark is dark */
+  --color-monitor:         #0f1410;
+  --color-monitor-surface: #171e1b;
 
   --font-display: var(--font-display), ui-serif, Georgia, serif;
-  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-mono), ui-monospace, "SF Mono", monospace;
+  --font-sans:    var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono:    var(--font-mono), ui-monospace, "SF Mono", monospace;
 
-  --radius: 0.5rem;
+  --radius:      0.5rem;
   --radius-pill: 9999px;
 }
 
 /* Bridge: shadcn/base-ui components */
 @theme inline {
-  --color-background: var(--color-paper);
-  --color-foreground: var(--color-ink);
-  --color-card: var(--color-panel);
-  --color-card-foreground: var(--color-ink);
-  --color-popover: var(--color-panel);
-  --color-popover-foreground: var(--color-ink);
-  --color-primary: var(--color-pine);
-  --color-primary-foreground: #ffffff;
-  --color-secondary: var(--color-slate-tint);
-  --color-secondary-foreground: var(--color-ink);
-  --color-muted: var(--color-slate-tint);
-  --color-muted-foreground: var(--color-slate);
-  --color-accent: var(--color-pine-tint);
-  --color-accent-foreground: var(--color-pine);
-  --color-destructive: var(--color-crimson);
-  --color-border: var(--color-line);
-  --color-input: var(--color-line-strong);
-  --color-ring: var(--color-pine);
+  --color-background:          var(--color-paper);
+  --color-foreground:          var(--color-ink);
+  --color-card:                var(--color-panel);
+  --color-card-foreground:     var(--color-ink);
+  --color-popover:             var(--color-panel);
+  --color-popover-foreground:  var(--color-ink);
+  --color-primary:             var(--color-pine);
+  --color-primary-foreground:  #ffffff;
+  --color-secondary:           var(--color-slate-tint);
+  --color-secondary-foreground:var(--color-ink);
+  --color-muted:               var(--color-slate-tint);
+  --color-muted-foreground:    var(--color-slate);
+  --color-accent:              var(--color-pine-tint);
+  --color-accent-foreground:   var(--color-pine);
+  --color-destructive:         var(--color-crimson);
+  --color-border:              var(--color-line);
+  --color-input:               var(--color-line-strong);
+  --color-ring:                var(--color-pine);
 
-  --radius-sm: calc(var(--radius) * 0.55);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-sm:  calc(var(--radius) * 0.55);
+  --radius-md:  calc(var(--radius) * 0.8);
+  --radius-lg:  var(--radius);
+  --radius-xl:  calc(var(--radius) * 1.4);
   --radius-2xl: calc(var(--radius) * 2);
 }
 
@@ -137,9 +146,8 @@
   body {
     @apply bg-paper text-ink;
     font-feature-settings: "cv05" 1;
-    /* Premium dot-grid texture — the signature of top-tier dashboards.
-       Very subtle: 1px dots every 28px on a transparent base. */
-    background-image: radial-gradient(circle, #c8ced4 1px, transparent 1px);
+    /* Warm dot-grid — beige on ivory, the signature of top-tier dashboards. */
+    background-image: radial-gradient(circle, #c8bfaf 1px, transparent 1px);
     background-size: 28px 28px;
   }
 
@@ -154,6 +162,7 @@
     color: #fff;
   }
 }
+
 
 /* ---------------------------------------------------------------------------
  * Component utilities
@@ -202,12 +211,12 @@
    * ------------------------------------------------------------------------- */
   .card-elevated {
     background: var(--color-panel);
-    border: 1px solid rgba(227, 231, 234, 0.8);
+    border: 1px solid rgba(232, 226, 217, 0.9);
     border-radius: var(--radius);
     box-shadow:
-      0 1px 2px rgba(12, 17, 22, 0.04),
-      0 4px 16px rgba(12, 17, 22, 0.06),
-      0 0 0 1px rgba(255, 255, 255, 0.95) inset;
+      0 1px 2px rgba(22, 16, 10, 0.04),
+      0 4px 16px rgba(22, 16, 10, 0.06),
+      0 0 0 1px rgba(253, 252, 249, 0.95) inset;
   }
 
   .card-elevated-hover {
@@ -215,28 +224,28 @@
   }
   .card-elevated-hover:hover {
     box-shadow:
-      0 2px 4px rgba(12, 17, 22, 0.06),
-      0 10px 28px rgba(12, 17, 22, 0.10),
-      0 0 0 1px rgba(255, 255, 255, 0.95) inset;
+      0 2px 4px rgba(22, 16, 10, 0.06),
+      0 10px 28px rgba(22, 16, 10, 0.10),
+      0 0 0 1px rgba(253, 252, 249, 0.95) inset;
     transform: translateY(-1px);
   }
 
   /* ---------------------------------------------------------------------------
    * Glow utilities
    * ------------------------------------------------------------------------- */
-  .glow-pine    { box-shadow: 0 0 0 3px rgba(18, 78, 74, 0.15), 0 0 16px rgba(18, 78, 74, 0.10); }
-  .glow-amber   { box-shadow: 0 0 0 3px rgba(200, 138, 4, 0.15), 0 0 16px rgba(200, 138, 4, 0.10); }
-  .glow-crimson { box-shadow: 0 0 0 3px rgba(168, 18, 55, 0.15), 0 0 16px rgba(168, 18, 55, 0.10); }
+  .glow-pine    { box-shadow: 0 0 0 3px rgba(26, 74, 60, 0.15), 0 0 16px rgba(26, 74, 60, 0.10); }
+  .glow-amber   { box-shadow: 0 0 0 3px rgba(160, 114, 40, 0.15), 0 0 16px rgba(160, 114, 40, 0.10); }
+  .glow-crimson { box-shadow: 0 0 0 3px rgba(155, 18, 57, 0.15), 0 0 16px rgba(155, 18, 57, 0.10); }
 
   /* ---------------------------------------------------------------------------
    * Pine gradient
    * ------------------------------------------------------------------------- */
   .bg-pine-gradient {
-    background: linear-gradient(135deg, #0c3533 0%, #124e4a 55%, #1a6b65 100%);
+    background: linear-gradient(135deg, #0f2e24 0%, #1a4a3c 55%, #246b58 100%);
   }
 
   .text-pine-gradient {
-    background: linear-gradient(135deg, #0c3533 0%, #1a6b65 100%);
+    background: linear-gradient(135deg, #0f2e24 0%, #246b58 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -269,14 +278,49 @@
     @apply border border-line bg-panel/90 text-slate hover:border-line-strong hover:bg-panel hover:text-ink;
   }
   .filter-pill-active {
-    @apply bg-ink text-white shadow-[0_2px_8px_rgba(12,17,22,0.2)];
+    @apply bg-ink text-white shadow-[0_2px_8px_rgba(22,16,10,0.25)];
   }
 
   /* Search input — shared style */
   .search-input {
-    @apply w-full rounded-xl border border-line bg-panel/90 px-4 py-2.5 text-[0.8125rem] text-ink placeholder:text-slate/40 outline-none transition-all duration-200 focus:border-pine/50 focus:bg-panel focus:shadow-[0_0_0_3px_rgba(18,78,74,0.09)];
+    @apply w-full rounded-xl border border-line bg-panel/90 px-4 py-2.5 text-[0.8125rem] text-ink placeholder:text-slate/40 outline-none transition-all duration-200 focus:border-pine/50 focus:bg-panel focus:shadow-[0_0_0_3px_rgba(26,74,60,0.09)];
   }
+
+  /* ---------------------------------------------------------------------------
+   * Campaign tab — underline-style selector (Linear / Vercel pattern)
+   * ------------------------------------------------------------------------- */
+  .campaign-tab {
+    @apply relative shrink-0 cursor-pointer select-none px-4 py-2.5 text-left transition-colors duration-150;
+    border-bottom: 2px solid transparent;
+  }
+  .campaign-tab:hover .campaign-tab-name { @apply text-ink; }
+  .campaign-tab-active {
+    border-bottom-color: var(--color-pine);
+  }
+  .campaign-tab-active .campaign-tab-name { color: var(--color-ink); }
+  .campaign-tab-name {
+    @apply block font-sans text-[0.875rem] font-semibold leading-tight text-slate transition-colors duration-150;
+  }
+  .campaign-tab-sub {
+    @apply mt-0.5 block font-mono text-[0.6rem] leading-tight text-slate/50;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * Section whisper label — ghost divider text, almost invisible
+   * ------------------------------------------------------------------------- */
+  .section-label {
+    @apply font-mono text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-slate/40;
+  }
+
+  /* ---------------------------------------------------------------------------
+   * Lead left-border accent strip
+   * ------------------------------------------------------------------------- */
+  .lead-accent-pine    { border-left: 2.5px solid #1a4a3c; }
+  .lead-accent-amber   { border-left: 2.5px solid #a07228; }
+  .lead-accent-slate   { border-left: 2.5px solid #d4cab8; }
+  .lead-accent-crimson { border-left: 2.5px solid #9b1239; }
 }
+
 
 /* ---------------------------------------------------------------------------
  * Reduced motion
