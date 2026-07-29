@@ -182,6 +182,18 @@ export interface LintViolation {
   why: string;
 }
 
+/** SMS and WhatsApp both need opt-out language; each gets its own length cap. */
+const CHANNEL_REQUIRES_OPT_OUT: Record<Channel, boolean> = {
+  sms: true,
+  whatsapp: true,
+  email: false,
+};
+const CHANNEL_MAX_LENGTH: Record<Channel, number | null> = {
+  sms: 320,
+  whatsapp: 1000,
+  email: null,
+};
+
 /**
  * Check a drafted message against the non-negotiable rules.
  * Returns every violation found so the agent can fix them in one pass.
@@ -199,21 +211,21 @@ export function lintMessage(
     }
   }
 
-  if (channel === "sms") {
-    if (!/\bstop\b/i.test(content)) {
-      violations.push({
-        rule: "Rule 5 (channel requirements)",
-        matched: "(missing)",
-        why: "SMS must carry opt-out language, e.g. 'Reply STOP to opt out'.",
-      });
-    }
-    if (content.length > 320) {
-      violations.push({
-        rule: "Rule 5 (channel requirements)",
-        matched: `${content.length} characters`,
-        why: "SMS must stay at or under 320 characters.",
-      });
-    }
+  if (CHANNEL_REQUIRES_OPT_OUT[channel] && !/\bstop\b/i.test(content)) {
+    violations.push({
+      rule: "Rule 5 (channel requirements)",
+      matched: "(missing)",
+      why: `${channel.toUpperCase()} must carry opt-out language, e.g. 'Reply STOP to opt out'.`,
+    });
+  }
+
+  const maxLength = CHANNEL_MAX_LENGTH[channel];
+  if (maxLength !== null && content.length > maxLength) {
+    violations.push({
+      rule: "Rule 5 (channel requirements)",
+      matched: `${content.length} characters`,
+      why: `${channel.toUpperCase()} must stay at or under ${maxLength} characters.`,
+    });
   }
 
   return violations;

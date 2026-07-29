@@ -23,13 +23,15 @@ export const PRACTICE_TYPES = [
 ] as const;
 export type PracticeType = (typeof PRACTICE_TYPES)[number];
 
-export const AD_SOURCES = ["google_search", "meta_feed"] as const;
+export const AD_SOURCES = ["google_search", "meta_feed", "direct_form"] as const;
 export type AdSource = (typeof AD_SOURCES)[number];
 
-export const CHANNELS = ["sms", "email"] as const;
+export const CHANNELS = ["sms", "email", "whatsapp"] as const;
 export type Channel = (typeof CHANNELS)[number];
 
 export type ComplianceVerdict = "pass" | "revised";
+export type Direction = "inbound" | "outbound";
+export type DispatchStatus = "sent" | "failed" | "skipped";
 
 /**
  * Ordering used to answer "has this lead reached at least stage X". Mirrors the
@@ -51,6 +53,9 @@ export interface Campaign {
   practice_type: PracticeType;
   ad_source: AdSource;
   spend: number;
+  /** Static practice facts — office hours and the booking link, for get_campaign_info. */
+  hours: string | null;
+  booking_url: string | null;
   created_at: string;
 }
 
@@ -87,6 +92,8 @@ export interface Lead {
   score: number | null;
   score_reasoning: string | null;
   stage: Stage;
+  /** Set the first time an automated (webhook-triggered) turn touches this lead. */
+  agent_session_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -95,9 +102,14 @@ export interface Followup {
   id: string;
   lead_id: string;
   channel: Channel;
+  direction: Direction;
   content: string;
   compliance_verdict: ComplianceVerdict | null;
   compliance_notes: string | null;
+  provider: string | null;
+  provider_message_id: string | null;
+  dispatch_status: DispatchStatus | null;
+  dispatch_error: string | null;
   sent_at: string;
 }
 
@@ -114,8 +126,25 @@ export interface ChatMessage {
   id: string;
   session_id: string;
   role: "user" | "assistant" | "tool";
+  /** 'system' marks a turn a webhook triggered rather than a typed message. */
+  source: "human" | "system";
   content: unknown;
   created_at: string;
+}
+
+export type WebhookSource = "forms" | "twilio";
+export type WebhookStatus = "received" | "processed" | "skipped" | "failed";
+
+export interface WebhookEvent {
+  id: string;
+  source: WebhookSource;
+  dedup_key: string;
+  payload: Record<string, unknown>;
+  lead_id: string | null;
+  status: WebhookStatus;
+  error: string | null;
+  created_at: string;
+  processed_at: string | null;
 }
 
 /** One row of the campaign_kpis view. */

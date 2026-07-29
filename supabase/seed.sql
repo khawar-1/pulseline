@@ -10,16 +10,25 @@
 --     forms post, including inconsistent key naming and free-text answers.
 --     That mess is the reason ingest_lead exists.
 
-truncate chat_messages, stage_events, followups, leads, campaigns restart identity cascade;
+truncate webhook_events, chat_messages, stage_events, followups, leads, campaigns restart identity cascade;
 
 -- ---------------------------------------------------------------------------
 -- Campaigns
 -- ---------------------------------------------------------------------------
 
-insert into campaigns (id, practice_name, practice_type, ad_source, spend, created_at) values
-  ('11111111-1111-4111-8111-000000000001', 'Lakeshore Dermatology',      'dermatology', 'google_search', 4820.00, now() - interval '38 days'),
-  ('22222222-2222-4222-8222-000000000002', 'Brightpath Pediatrics',      'pediatrics',  'meta_feed',     3145.50, now() - interval '31 days'),
-  ('33333333-3333-4333-8333-000000000003', 'Meridian Heart & Vascular',  'cardiology',  'google_search', 6710.00, now() - interval '45 days');
+insert into campaigns (id, practice_name, practice_type, ad_source, spend, hours, booking_url, created_at) values
+  ('11111111-1111-4111-8111-000000000001', 'Lakeshore Dermatology',      'dermatology', 'google_search', 4820.00,
+   'Mon-Fri 8:00am-5:00pm, Sat 9:00am-1:00pm. Closed Sundays.', 'https://book.lakeshorederm.example/new-patient', now() - interval '38 days'),
+  ('22222222-2222-4222-8222-000000000002', 'Brightpath Pediatrics',      'pediatrics',  'meta_feed',     3145.50,
+   'Mon-Fri 7:30am-6:00pm, Sat 8:00am-12:00pm. Closed Sundays.', 'https://book.brightpathpeds.example/new-patient', now() - interval '31 days'),
+  ('33333333-3333-4333-8333-000000000003', 'Meridian Heart & Vascular',  'cardiology',  'google_search', 6710.00,
+   'Mon-Fri 8:00am-4:30pm. Closed weekends.', 'https://book.meridianheart.example/new-patient', now() - interval '45 days'),
+  -- Dedicated destination for real leads from the live Google Form webhook,
+  -- kept separate from the three seeded ad campaigns above so a live demo
+  -- run never pollutes their KPI numbers. Re-running this file resets it to
+  -- zero leads every time (see the truncate above).
+  ('44444444-4444-4444-8444-000000000004', 'Pulseline Live Demo',        'dermatology', 'direct_form',   0.00,
+   'Mon-Fri 9:00am-5:00pm. Closed weekends.', 'https://book.pulseline-demo.example/new-patient', now());
 
 -- ---------------------------------------------------------------------------
 -- Lakeshore Dermatology (google_search)

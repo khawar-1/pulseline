@@ -79,10 +79,12 @@ risk is not.**
 
 ## Rule 5 — Channel requirements
 
-- **SMS** must include opt-out language ("Reply STOP to opt out") and should
-  stay under roughly 320 characters. Keep the reason for visit vague per Rule 2.
+- **SMS and WhatsApp** must include opt-out language ("Reply STOP to opt out")
+  and should stay under roughly 320 characters for SMS, 1000 for WhatsApp.
+  Keep the reason for visit vague per Rule 2 -- a WhatsApp notification
+  preview is just as visible on a lock screen as an SMS one.
 - **Email** must identify the practice by name and give a real way to respond.
-- Both must be plainly from the practice, never anonymous or ambiguous.
+- All three must be plainly from the practice, never anonymous or ambiguous.
 
 ## Rule 6 — Tone
 

@@ -25,6 +25,8 @@ import {
   scoreLead,
 } from "../src/agent/tools";
 import { supabaseAdmin } from "../src/lib/supabase/server";
+import { isTwilioConfigured, sendWhatsApp } from "../src/lib/twilio";
+import { recordWebhookEvent } from "../src/lib/webhooks";
 import { STAGE_RANK, type Lead, type Stage } from "../src/lib/supabase/types";
 
 // ---------------------------------------------------------------------------
@@ -83,7 +85,9 @@ async function main() {
   await check("1. Schema applied and seed data present", async () => {
     const { data: campaigns, error: cErr } = await db.from("campaigns").select("*");
     assert(!cErr, `campaigns query failed: ${cErr?.message}`);
-    assert(campaigns && campaigns.length === 3, `expected 3 campaigns, got ${campaigns?.length ?? 0}`);
+    // 3 seeded ad campaigns plus the dedicated live-demo campaign the forms
+    // webhook attaches real submissions to.
+    assert(campaigns && campaigns.length === 4, `expected 4 campaigns, got ${campaigns?.length ?? 0}`);
 
     const { data: leads, error: lErr } = await db.from("leads").select("*");
     assert(!lErr, `leads query failed: ${lErr?.message}`);
@@ -302,6 +306,38 @@ async function main() {
     assert(toolsUsed.has("score_lead"), "the agent never scored a lead");
 
     return `${result.messages.length} messages, tools used: ${[...toolsUsed].sort().join(", ")}`;
+  });
+
+  // -- 8 -------------------------------------------------------------------
+  // Neither half of this touches the network: the webhook layer has to stay
+  // deterministic and Twilio-independent, same as every other check here.
+  await check("8. Webhook dedup and Twilio-unconfigured send stay network-free", async () => {
+    assert(
+      !isTwilioConfigured(),
+      "TWILIO_* env vars are set in this environment — this check assumes they are not, " +
+        "to prove sendWhatsApp degrades safely when Twilio is unconfigured",
+    );
+
+    const dedupKey = `verify-harness-${workLeadId}`;
+    const first = await recordWebhookEvent({
+      source: "forms",
+      dedupKey,
+      payload: { fixture: true },
+    });
+    assert(!first.isDuplicate, "first insert was reported as a duplicate");
+
+    const second = await recordWebhookEvent({
+      source: "forms",
+      dedupKey,
+      payload: { fixture: true, resent: true },
+    });
+    assert(second.isDuplicate, "a second insert with the same dedup key was not detected");
+    assert(second.event.id === first.event.id, "duplicate lookup returned a different row");
+
+    const send = await sendWhatsApp("+13125550100", "Verification fixture — should never send.");
+    assert(send.status === "skipped", `expected skipped with no Twilio env vars, got '${send.status}'`);
+
+    return `duplicate (source, dedup_key) short-circuited to the same row; sendWhatsApp skipped cleanly`;
   });
 
   // -- summary -------------------------------------------------------------

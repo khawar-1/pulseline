@@ -207,11 +207,19 @@ export function narrateTool(item: {
           compliance: output.escalate_to_human ? "blocked" : null,
         };
       }
+      const dispatchNote =
+        output.dispatch?.status === "sent"
+          ? " · sent live via WhatsApp"
+          : output.dispatch?.status === "failed"
+            ? " · Twilio send failed, saved only"
+            : output.channel === "whatsapp" && output.dispatch?.status === "skipped"
+              ? " · Twilio not configured, saved only"
+              : "";
       return {
         title: `Sent a compliant ${output.channel ?? "message"}`,
         detail: `review: ${output.compliance_verdict ?? "—"} · ${
           output.characters ?? "?"
-        } chars`,
+        } chars${dispatchNote}`,
         tone: "pine",
         compliance: "cleared",
       };

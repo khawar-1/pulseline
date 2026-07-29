@@ -1,6 +1,7 @@
 import { tool } from "langchain";
 import * as z from "zod";
 
+import { sendWhatsApp } from "@/lib/twilio";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { CHANNELS } from "@/lib/supabase/types";
 import {
@@ -81,6 +82,7 @@ export const draftFollowup = tool(
       .insert({
         lead_id,
         channel,
+        direction: "outbound",
         content,
         compliance_verdict,
         compliance_notes,
@@ -90,6 +92,33 @@ export const draftFollowup = tool(
 
     if (error) return toolError(`Failed to save the follow-up: ${error.message}`);
 
+    const followupId = (data as { id: string }).id;
+
+    // Real send, atomic with the compliant write: no separate agent
+    // decision, no approval step. Best-effort -- if Twilio is unconfigured
+    // (local dev, npm run verify) or the API call fails, the row still
+    // exists with dispatch_status recording what happened. The compliance
+    // gate above is what is load-bearing; delivery is not.
+    let dispatch: { status: "sent" | "failed" | "skipped"; providerMessageId?: string; error?: string } =
+      { status: "skipped" };
+
+    if (channel === "whatsapp") {
+      const phone = lead.parsed?.phone ?? null;
+      dispatch = phone
+        ? await sendWhatsApp(phone, content)
+        : { status: "skipped", error: "No phone number on file for this lead." };
+
+      await supabaseAdmin()
+        .from("followups")
+        .update({
+          provider: "twilio",
+          provider_message_id: dispatch.providerMessageId ?? null,
+          dispatch_status: dispatch.status,
+          dispatch_error: dispatch.error ?? null,
+        })
+        .eq("id", followupId);
+    }
+
     const advanced = shouldAdvanceTo(lead.stage, "contacted")
       ? await moveStage(lead, "contacted")
       : { moved: false, from: lead.stage, to: lead.stage };
@@ -97,24 +126,28 @@ export const draftFollowup = tool(
     return toolResult({
       ok: true,
       written: true,
-      followup_id: (data as { id: string }).id,
+      followup_id: followupId,
       lead_id,
       channel,
       compliance_verdict,
       stage: advanced.moved ? advanced.to : lead.stage,
       characters: content.length,
+      dispatch: channel === "whatsapp" ? dispatch : { status: "not_applicable" },
     });
   },
   {
     name: "draft_followup",
     description:
-      "Save an outbound SMS or email follow-up for a scored lead and move it " +
-      "to 'contacted'. Before calling this you MUST send your draft to the " +
-      "compliance-reviewer subagent and pass through its verdict and notes — " +
-      "they are required fields. The message is independently re-checked here " +
-      "against the compliance rules; if it fails, nothing is saved and you get " +
-      "the violations back to fix. Reference specific details the patient " +
-      "supplied, and always end with a concrete scheduling ask.",
+      "Save an outbound SMS, email, or WhatsApp follow-up for a scored lead and " +
+      "move it to 'contacted'. Before calling this you MUST send your draft to " +
+      "the compliance-reviewer subagent and pass through its verdict and notes " +
+      "— they are required fields. The message is independently re-checked " +
+      "here against the compliance rules; if it fails, nothing is saved and " +
+      "you get the violations back to fix. For channel=whatsapp, once " +
+      "compliance clears the message is sent automatically via Twilio if " +
+      "configured — there is no separate send step. Reference specific " +
+      "details the patient supplied, and always end with a concrete " +
+      "scheduling ask.",
     schema: z.object({
       lead_id: z.string().uuid(),
       channel: z.enum(CHANNELS),
@@ -123,7 +156,9 @@ export const draftFollowup = tool(
         .min(1)
         .describe(
           "The final approved message text, exactly as it will be sent. For " +
-            "SMS keep it at or under 320 characters and include 'Reply STOP to opt out'.",
+            "SMS keep it at or under 320 characters and include 'Reply STOP to " +
+            "opt out'; for WhatsApp the same opt-out line is required, at or " +
+            "under 1000 characters.",
         ),
       compliance_verdict: z
         .enum(["pass", "revised"])

@@ -143,6 +143,19 @@ function buildParsed(payload: Record<string, unknown>): ParsedLead {
   };
 }
 
+/**
+ * Pull just the phone number out of a raw submission, normalized. Used by the
+ * forms webhook to look up a possible existing lead for this phone within the
+ * same campaign *before* deciding whether to file a new lead or treat this as
+ * the same person returning -- shares the same alias table and normalization
+ * ingest_lead itself uses, so the two never disagree about what a submission's
+ * phone number is.
+ */
+export function extractPhoneForDedup(payload: Record<string, unknown>): string | null {
+  const flat = flattenFieldData(payload);
+  return normalizePhone(pick(flat, FIELD_ALIASES.phone));
+}
+
 export const ingestLead = tool(
   async ({ lead_id, campaign_id, raw_payload }) => {
     const db = supabaseAdmin();

@@ -8,7 +8,16 @@ import type { ChatMessage } from "@/lib/supabase/types";
 
 const SESSION_KEY = "pulseline.session";
 
+/**
+ * `?session=<uuid>` points the console at a specific session -- in practice,
+ * a webhook-triggered automation run -- without disturbing the operator's
+ * own session. Deliberately not persisted to localStorage: navigating back
+ * to the bare URL returns to the operator's own chat, not the borrowed one.
+ */
 function readSessionId(): string {
+  const fromUrl = new URLSearchParams(window.location.search).get("session");
+  if (fromUrl) return fromUrl;
+
   const existing = window.localStorage.getItem(SESSION_KEY);
   if (existing) return existing;
   const fresh = crypto.randomUUID();
@@ -36,8 +45,16 @@ export function useAgentChat(options: { onSettled?: () => void } = {}) {
 
   const abortRef = useRef<AbortController | null>(null);
   const loadedFor = useRef<string | null>(null);
+  /** True when this session came from `?session=` rather than localStorage --
+   *  i.e. this tab is observing a session (typically a webhook automation
+   *  run) it does not itself drive via SSE. Realtime is scoped to that case
+   *  only: the operator's own localStorage session already gets every
+   *  message live through the SSE stream, and layering Realtime on top of it
+   *  would double-render each turn under two different row ids. */
+  const isObservingRef = useRef(false);
 
   useEffect(() => {
+    isObservingRef.current = new URLSearchParams(window.location.search).has("session");
     setSessionId(readSessionId());
   }, []);
 
@@ -79,6 +96,48 @@ export function useAgentChat(options: { onSettled?: () => void } = {}) {
     return () => {
       cancelled = true;
     };
+  }, [sessionId]);
+
+  /**
+   * Webhook-triggered turns never touch the SSE route -- they call
+   * runAgentTurn directly with no browser waiting -- so without this a
+   * session opened via ?session= would only ever show the one-time snapshot
+   * from mount. This brings the user/assistant text in live, following the
+   * same postgres_changes pattern as use-pipeline.ts. Tool-card detail still
+   * does not replay (chat_messages only ever holds user/assistant rows); the
+   * pipeline pane remains the primary live-proof surface for automated work.
+   */
+  useEffect(() => {
+    if (!sessionId || !isObservingRef.current) return;
+
+    const db = supabaseBrowser();
+    const channel = db.channel(`chat-${sessionId}`).on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "chat_messages",
+        filter: `session_id=eq.${sessionId}`,
+      },
+      (payload) => {
+        const row = payload.new as ChatMessage;
+        if (row.role !== "user" && row.role !== "assistant") return;
+
+        const text = typeof row.content === "string" ? row.content : JSON.stringify(row.content);
+        setItems((current) => {
+          if (current.some((item) => item.id === row.id)) return current;
+          return [
+            ...current,
+            row.role === "user"
+              ? ({ kind: "user", id: row.id, text } as const)
+              : ({ kind: "assistant", id: row.id, text, streaming: false } as const),
+          ];
+        });
+      },
+    );
+
+    channel.subscribe();
+    return () => void db.removeChannel(channel);
   }, [sessionId]);
 
   /** Append streamed text to the open assistant bubble, or start a new one. */

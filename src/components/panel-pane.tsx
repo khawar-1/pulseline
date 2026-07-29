@@ -295,6 +295,7 @@ export function PanelPane({
           <StageRail
             leads={filteredLeads}
             followups={followups}
+            events={scope.events}
             now={snapshot.fetchedAt}
             isFiltered={isFiltered}
           />

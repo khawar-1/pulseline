@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 
 import { LeadRow } from "@/components/lead-row";
 import { STAGE_META, STAGE_ORDER, TONE_HEX } from "@/lib/pipeline";
-import type { Followup, Lead, Stage } from "@/lib/supabase/types";
+import type { Followup, Lead, Stage, StageEvent } from "@/lib/supabase/types";
 
 /**
  * The pipeline, as a vertical rail grouped by stage.
@@ -29,11 +29,14 @@ const PAGE_SIZE = 5;
 export function StageRail({
   leads,
   followups,
+  events,
   now,
   isFiltered = false,
 }: {
   leads: Lead[];
   followups: Followup[];
+  /** Full stage-change audit log — used here only to surface repeat bookings. */
+  events: StageEvent[];
   /** The instant the snapshot was read — see `timeAgo`. */
   now: number;
   /** When true (search/filter active), lifts the per-stage page limit. */
@@ -48,6 +51,21 @@ export function StageRail({
     }
     return map;
   }, [followups]);
+
+  // A lead that returns and books again gets a second real 'booked'
+  // transition on the same card (see the forms webhook's stage-reset logic)
+  // rather than a second lead row. This is what surfaces "booked twice" —
+  // every booking date the lead has ever reached, oldest first.
+  const bookingsByLead = useMemo(() => {
+    const map = new Map<string, StageEvent[]>();
+    for (const event of events) {
+      if (event.to_stage !== "booked") continue;
+      const list = map.get(event.lead_id);
+      if (list) list.push(event);
+      else map.set(event.lead_id, [event]);
+    }
+    return map;
+  }, [events]);
 
   const groups = useMemo(() => {
     const byStage = new Map<Stage, Lead[]>();
@@ -88,6 +106,7 @@ export function StageRail({
             stage={stage}
             leads={stageLeads}
             followupsByLead={followupsByLead}
+            bookingsByLead={bookingsByLead}
             now={now}
             isFiltered={isFiltered}
           />
@@ -106,12 +125,14 @@ function StageGroup({
   stage,
   leads,
   followupsByLead,
+  bookingsByLead,
   now,
   isFiltered,
 }: {
   stage: Stage;
   leads: Lead[];
   followupsByLead: Map<string, Followup[]>;
+  bookingsByLead: Map<string, StageEvent[]>;
   now: number;
   isFiltered: boolean;
 }) {
@@ -161,6 +182,7 @@ function StageGroup({
             key={lead.id}
             lead={lead}
             followups={followupsByLead.get(lead.id) ?? []}
+            bookings={bookingsByLead.get(lead.id) ?? []}
             now={now}
           />
         ))}

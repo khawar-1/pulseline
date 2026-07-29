@@ -140,4 +140,10 @@ export const PRACTICE_LABEL: Record<string, string> = {
 export const AD_SOURCE_LABEL: Record<string, string> = {
   google_search: "Google Search",
   meta_feed: "Meta Feed",
+  direct_form: "Direct Form",
 };
+
+/** Short absolute date for a list of repeat events, e.g. multiple bookings on one lead. */
+export function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}

@@ -7,13 +7,14 @@ import { useScoreReveal } from "@/hooks/use-score-reveal";
 import {
   TONE_CLASS,
   TONE_HEX,
+  formatDate,
   leadName,
   scoreLabel,
   scoreTone,
   shortId,
   timeAgo,
 } from "@/lib/pipeline";
-import type { Followup, Lead } from "@/lib/supabase/types";
+import type { Followup, Lead, StageEvent } from "@/lib/supabase/types";
 
 /**
  * One lead in the rail.
@@ -27,10 +28,18 @@ import type { Followup, Lead } from "@/lib/supabase/types";
 export function LeadRow({
   lead,
   followups,
+  bookings = [],
   now,
 }: {
   lead: Lead;
   followups: Followup[];
+  /**
+   * Every 'booked' transition this lead has ever reached, oldest first. A
+   * returning patient who books again reuses this same lead card rather than
+   * getting a second one, so a second booking shows up here as a second date
+   * instead of a second row in the pipeline.
+   */
+  bookings?: StageEvent[];
   /** The instant the snapshot was read — see `timeAgo`. */
   now: number;
 }) {
@@ -176,13 +185,41 @@ export function LeadRow({
                 </div>
               )}
 
-              {/* Latest followup message */}
-              {latest && (
-                <div className="rounded-xl border border-pine/25 bg-pine-tint/40 p-3">
-                  <p className="label mb-2 text-pine">
-                    {latest.channel} sent · compliance {latest.compliance_verdict ?? "—"}
+              {/* Repeat bookings on this same card -- a returning patient who
+                  books again shows up as a second date here, not a second
+                  lead row. A single booking is already conveyed by the stage
+                  badge, so this only renders once there is more than one. */}
+              {bookings.length > 1 && (
+                <div className="rounded-lg border border-pine/25 bg-pine-tint/30 px-3 py-2">
+                  <p className="label mb-1 text-pine">Booked {bookings.length}×</p>
+                  <p className="font-mono text-[0.7rem] text-pine/80">
+                    {bookings.map((b) => formatDate(b.created_at)).join(" · ")}
                   </p>
-                  <p className="whitespace-pre-wrap rounded-lg border border-pine/15 bg-panel/80 px-3 py-2.5 text-[0.8125rem] leading-relaxed text-ink">
+                </div>
+              )}
+
+              {/* Latest followup message -- can be an inbound patient reply
+                  now that followups holds both directions. */}
+              {latest && (
+                <div
+                  className={
+                    latest.direction === "inbound"
+                      ? "rounded-xl border border-amber/25 bg-amber-tint/40 p-3"
+                      : "rounded-xl border border-pine/25 bg-pine-tint/40 p-3"
+                  }
+                >
+                  <p className={`label mb-2 ${latest.direction === "inbound" ? "text-amber" : "text-pine"}`}>
+                    {latest.direction === "inbound"
+                      ? `Patient replied via ${latest.channel}`
+                      : `${outboundVerb(latest)} · compliance ${latest.compliance_verdict ?? "—"}`}
+                  </p>
+                  <p
+                    className={
+                      latest.direction === "inbound"
+                        ? "whitespace-pre-wrap rounded-lg border border-amber/15 bg-panel/80 px-3 py-2.5 text-[0.8125rem] leading-relaxed text-ink"
+                        : "whitespace-pre-wrap rounded-lg border border-pine/15 bg-panel/80 px-3 py-2.5 text-[0.8125rem] leading-relaxed text-ink"
+                    }
+                  >
                     {latest.content}
                   </p>
                   {latest.compliance_notes && (
@@ -198,6 +235,20 @@ export function LeadRow({
       </AnimatePresence>
     </motion.li>
   );
+}
+
+/**
+ * What to call an outbound message, honestly reflecting whether it actually
+ * left via Twilio or only cleared compliance and was persisted. "sent" is
+ * only ever said when dispatch_status genuinely says so — sms/email have
+ * always been persist-only (no provider wired up for either), and whatsapp
+ * without Twilio configured is compliance-cleared and ready, not delivered.
+ */
+function outboundVerb(followup: Followup): string {
+  if (followup.channel !== "whatsapp") return `${followup.channel} drafted`;
+  if (followup.dispatch_status === "sent") return "whatsapp sent";
+  if (followup.dispatch_status === "failed") return "whatsapp drafted — send failed";
+  return "whatsapp drafted";
 }
 
 function Field({

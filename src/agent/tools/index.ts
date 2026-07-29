@@ -1,4 +1,5 @@
 import { draftFollowup } from "./draft-followup";
+import { getCampaignInfo } from "./campaign-info";
 import { getCampaignKpis } from "./campaign-kpis";
 import { ingestLead } from "./ingest-lead";
 import { logKpiEvent } from "./log-kpi-event";
@@ -17,6 +18,7 @@ export const pulselineTools = [
   draftFollowup,
   logKpiEvent,
   getCampaignKpis,
+  getCampaignInfo,
 ];
 
 /** Read-only subset handed to the campaign-analyst subagent. */
@@ -29,4 +31,5 @@ export {
   draftFollowup,
   logKpiEvent,
   getCampaignKpis,
+  getCampaignInfo,
 };
