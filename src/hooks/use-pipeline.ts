@@ -7,14 +7,15 @@ import { hasSupabaseEnv, supabaseBrowser } from "@/lib/supabase/client";
 
 export type LiveStatus = "connecting" | "live" | "offline";
 
-const TABLES = ["leads", "followups", "stage_events"] as const;
+const TABLES = ["leads", "followups", "stage_events", "campaigns"] as const;
 
 /**
  * Keeps the panel in step with the database while the agent works.
  *
  * Realtime is used as a *notification*, not as a data source: any change on
- * the three tables the agent writes to triggers a debounced refetch of the
- * whole snapshot rather than a local patch from the change payload. The
+ * the tables the agent (or the account manager, via /api/campaigns) writes to
+ * triggers a debounced refetch of the whole snapshot rather than a local
+ * patch from the change payload. The
  * working set is a few dozen rows, so a refetch costs one round trip and
  * cannot drift out of sync with Postgres — whereas applying deltas by hand
  * has to get every ordering, view-recompute and missed-event case right. The

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { KpiRow, summarise } from "@/components/kpi-row";
+import { NewCampaignDialog } from "@/components/new-campaign-dialog";
 import { PulseTrace } from "@/components/pulse-trace";
 import { StageRail } from "@/components/stage-rail";
 import type { LiveStatus } from "@/hooks/use-pipeline";
@@ -160,6 +161,7 @@ export function PanelPane({
               }`}
             />
           ))}
+          <NewCampaignDialog onCreated={onSelectCampaign} />
         </div>
       </header>
 

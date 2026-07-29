@@ -239,8 +239,11 @@ create policy "anon read chat_messages" on chat_messages for select to anon, aut
 -- appear in the UI the instant they land, with no polling. chat_messages is
 -- included so a console pointed at a webhook-triggered session (?session=)
 -- can show that automated turn's messages live, the same way a human-typed
--- session already does over SSE.
+-- session already does over SSE. campaigns is included so a campaign created
+-- through /api/campaigns (the account manager, not the agent) shows up
+-- without a manual refresh.
 alter publication supabase_realtime add table leads;
 alter publication supabase_realtime add table followups;
 alter publication supabase_realtime add table stage_events;
 alter publication supabase_realtime add table chat_messages;
+alter publication supabase_realtime add table campaigns;
