@@ -5,8 +5,6 @@ import { useState } from "react";
 
 import { useScoreReveal } from "@/hooks/use-score-reveal";
 import {
-  STAGE_META,
-  STAGE_ORDER,
   TONE_CLASS,
   TONE_HEX,
   formatDate,
@@ -15,7 +13,7 @@ import {
   scoreTone,
   timeAgo,
 } from "@/lib/pipeline";
-import type { Followup, Lead, Stage, StageEvent } from "@/lib/supabase/types";
+import type { Followup, Lead, StageEvent } from "@/lib/supabase/types";
 
 /**
  * One lead in the rail.
@@ -47,42 +45,49 @@ export function LeadRow({
   const [open, setOpen] = useState(false);
   const reduceMotion = useReducedMotion();
   const displayScore = useScoreReveal(lead.score);
-  const [stageDraft, setStageDraft] = useState<Stage>(lead.stage);
   const [savingStage, setSavingStage] = useState(false);
   const [stageError, setStageError] = useState<string | null>(null);
-  // Keep the draft in step when Realtime brings in a stage change from
-  // elsewhere (the agent, or this same edit landing) -- otherwise the select
-  // would keep showing a stale value after a successful save. Adjusted during
-  // render rather than in an effect (React's recommended pattern for this),
-  // so there's no extra render pass and no lint violation on setState-in-effect.
-  const [trackedStage, setTrackedStage] = useState(lead.stage);
-  if (lead.stage !== trackedStage) {
-    setTrackedStage(lead.stage);
-    setStageDraft(lead.stage);
-  }
+  const [savingReview, setSavingReview] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
 
-  const saveStage = async () => {
-    if (stageDraft === lead.stage) return;
+  // Every other stage transition is the agent's own job (score_lead,
+  // draft_followup, log_kpi_event reading a reply) -- booked is the one
+  // stage a human can legitimately know about before the agent could, e.g.
+  // a phone booking. On success, Realtime picks up the leads/stage_events
+  // change and refetches the snapshot -- no local state patch needed here.
+  const markBooked = async () => {
     setSavingStage(true);
     setStageError(null);
     try {
       const res = await fetch(`/api/leads/${lead.id}/stage`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ to_stage: stageDraft }),
+        body: JSON.stringify({ to_stage: "booked" }),
       });
       const json = await res.json();
-      if (!res.ok) {
-        setStageError(json.error ?? "Failed to update stage.");
-        setStageDraft(lead.stage);
-      }
-      // On success, Realtime picks up the leads/stage_events change and
-      // refetches the snapshot -- no local state patch needed here.
+      if (!res.ok) setStageError(json.error ?? "Failed to mark as booked.");
     } catch {
       setStageError("Network error — could not reach the server.");
-      setStageDraft(lead.stage);
     } finally {
       setSavingStage(false);
+    }
+  };
+
+  // Clears needs_human_review once a person has actually handled the lead
+  // (called the patient, escalated to clinical staff) -- the detection logic
+  // that sets this flag in score_lead is untouched; this only adds the
+  // missing acknowledgement step, since nothing previously cleared it.
+  const markReviewed = async () => {
+    setSavingReview(true);
+    setReviewError(null);
+    try {
+      const res = await fetch(`/api/leads/${lead.id}/review`, { method: "PATCH" });
+      const json = await res.json();
+      if (!res.ok) setReviewError(json.error ?? "Failed to clear the review flag.");
+    } catch {
+      setReviewError("Network error — could not reach the server.");
+    } finally {
+      setSavingReview(false);
     }
   };
 
@@ -270,36 +275,50 @@ export function LeadRow({
                 </div>
               )}
 
-              {/* Manual stage override -- for a booking (or a loss, or a
-                  reply) that happened somewhere Pulseline can't see, like a
-                  phone call. Not restricted to forward moves; a correction
-                  is exactly the case where you need to go backward. */}
-              <div
-                className="flex items-center gap-2 rounded-lg border border-line bg-panel px-3 py-2"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <label className="label shrink-0">Stage</label>
-                <select
-                  value={stageDraft}
-                  onChange={(e) => setStageDraft(e.target.value as Stage)}
-                  disabled={savingStage}
-                  className="min-w-0 flex-1 rounded-md border border-line bg-paper px-2 py-1 text-[0.8125rem] text-ink outline-none focus:border-pine/50 disabled:opacity-50"
+              {/* Human-review acknowledgement -- only shown while the flag
+                  is set. Clears it once you've actually handled the lead
+                  yourself; does not touch what set it. */}
+              {blocked && (
+                <div
+                  className="flex items-center justify-between gap-3 rounded-lg border border-crimson/25 bg-crimson-tint/25 px-3 py-2.5"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  {STAGE_ORDER.map((stage) => (
-                    <option key={stage} value={stage}>{STAGE_META[stage].label}</option>
-                  ))}
-                </select>
-                {stageDraft !== lead.stage && (
+                  <p className="text-[0.75rem] leading-relaxed text-crimson/90">
+                    Flagged for acute symptoms — the agent will not message this lead. Clear this
+                    once you&apos;ve personally called the patient or handed it to clinical staff.
+                  </p>
                   <button
                     type="button"
-                    onClick={saveStage}
-                    disabled={savingStage}
-                    className="shrink-0 rounded-md bg-pine-gradient px-2.5 py-1 text-[0.75rem] font-semibold text-white disabled:opacity-50"
+                    onClick={markReviewed}
+                    disabled={savingReview}
+                    className="shrink-0 rounded-md bg-crimson px-2.5 py-1.5 text-[0.75rem] font-semibold text-white disabled:opacity-50"
                   >
-                    {savingStage ? "Saving…" : "Save"}
+                    {savingReview ? "Saving…" : "I've handled this"}
                   </button>
-                )}
-              </div>
+                </div>
+              )}
+              {reviewError && (
+                <p className="rounded-lg border border-crimson/25 bg-crimson-tint/40 px-3 py-2 text-[0.75rem] text-crimson">
+                  {reviewError}
+                </p>
+              )}
+
+              {/* Manual "mark as booked" -- for a booking that happened
+                  somewhere Pulseline can't see, like a phone call. The only
+                  stage a human sets directly; every other transition is the
+                  agent's job. */}
+              {lead.stage !== "booked" && (
+                <div onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    onClick={markBooked}
+                    disabled={savingStage}
+                    className="w-full rounded-lg border border-pine/30 bg-pine-tint/30 px-3 py-2 text-[0.8125rem] font-semibold text-pine transition-colors hover:bg-pine-tint/50 disabled:opacity-50"
+                  >
+                    {savingStage ? "Saving…" : "Mark as booked"}
+                  </button>
+                </div>
+              )}
               {stageError && (
                 <p className="rounded-lg border border-crimson/25 bg-crimson-tint/40 px-3 py-2 text-[0.75rem] text-crimson">
                   {stageError}
