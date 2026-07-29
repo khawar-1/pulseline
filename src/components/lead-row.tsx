@@ -5,6 +5,8 @@ import { useState } from "react";
 
 import { useScoreReveal } from "@/hooks/use-score-reveal";
 import {
+  STAGE_META,
+  STAGE_ORDER,
   TONE_CLASS,
   TONE_HEX,
   formatDate,
@@ -13,7 +15,7 @@ import {
   scoreTone,
   timeAgo,
 } from "@/lib/pipeline";
-import type { Followup, Lead, StageEvent } from "@/lib/supabase/types";
+import type { Followup, Lead, Stage, StageEvent } from "@/lib/supabase/types";
 
 /**
  * One lead in the rail.
@@ -45,6 +47,44 @@ export function LeadRow({
   const [open, setOpen] = useState(false);
   const reduceMotion = useReducedMotion();
   const displayScore = useScoreReveal(lead.score);
+  const [stageDraft, setStageDraft] = useState<Stage>(lead.stage);
+  const [savingStage, setSavingStage] = useState(false);
+  const [stageError, setStageError] = useState<string | null>(null);
+  // Keep the draft in step when Realtime brings in a stage change from
+  // elsewhere (the agent, or this same edit landing) -- otherwise the select
+  // would keep showing a stale value after a successful save. Adjusted during
+  // render rather than in an effect (React's recommended pattern for this),
+  // so there's no extra render pass and no lint violation on setState-in-effect.
+  const [trackedStage, setTrackedStage] = useState(lead.stage);
+  if (lead.stage !== trackedStage) {
+    setTrackedStage(lead.stage);
+    setStageDraft(lead.stage);
+  }
+
+  const saveStage = async () => {
+    if (stageDraft === lead.stage) return;
+    setSavingStage(true);
+    setStageError(null);
+    try {
+      const res = await fetch(`/api/leads/${lead.id}/stage`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to_stage: stageDraft }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setStageError(json.error ?? "Failed to update stage.");
+        setStageDraft(lead.stage);
+      }
+      // On success, Realtime picks up the leads/stage_events change and
+      // refetches the snapshot -- no local state patch needed here.
+    } catch {
+      setStageError("Network error — could not reach the server.");
+      setStageDraft(lead.stage);
+    } finally {
+      setSavingStage(false);
+    }
+  };
 
   const tone = scoreTone(lead.score);
   const toneHex = TONE_HEX[tone];
@@ -228,6 +268,42 @@ export function LeadRow({
                     </p>
                   )}
                 </div>
+              )}
+
+              {/* Manual stage override -- for a booking (or a loss, or a
+                  reply) that happened somewhere Pulseline can't see, like a
+                  phone call. Not restricted to forward moves; a correction
+                  is exactly the case where you need to go backward. */}
+              <div
+                className="flex items-center gap-2 rounded-lg border border-line bg-panel px-3 py-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <label className="label shrink-0">Stage</label>
+                <select
+                  value={stageDraft}
+                  onChange={(e) => setStageDraft(e.target.value as Stage)}
+                  disabled={savingStage}
+                  className="min-w-0 flex-1 rounded-md border border-line bg-paper px-2 py-1 text-[0.8125rem] text-ink outline-none focus:border-pine/50 disabled:opacity-50"
+                >
+                  {STAGE_ORDER.map((stage) => (
+                    <option key={stage} value={stage}>{STAGE_META[stage].label}</option>
+                  ))}
+                </select>
+                {stageDraft !== lead.stage && (
+                  <button
+                    type="button"
+                    onClick={saveStage}
+                    disabled={savingStage}
+                    className="shrink-0 rounded-md bg-pine-gradient px-2.5 py-1 text-[0.75rem] font-semibold text-white disabled:opacity-50"
+                  >
+                    {savingStage ? "Saving…" : "Save"}
+                  </button>
+                )}
+              </div>
+              {stageError && (
+                <p className="rounded-lg border border-crimson/25 bg-crimson-tint/40 px-3 py-2 text-[0.75rem] text-crimson">
+                  {stageError}
+                </p>
               )}
             </div>
           </motion.div>

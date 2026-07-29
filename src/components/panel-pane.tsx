@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 
+import { CampaignSettingsDialog } from "@/components/campaign-settings-dialog";
 import { KpiRow, summarise } from "@/components/kpi-row";
 import { NewCampaignDialog } from "@/components/new-campaign-dialog";
 import { PulseTrace } from "@/components/pulse-trace";
@@ -138,7 +139,15 @@ export function PanelPane({
         {/* Top row: title + live badge */}
         <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-0">
           <span className="section-label">Pipeline Monitor</span>
-          <LiveBadge status={status} />
+          <div className="flex items-center gap-2.5">
+            {scope.campaign && (
+              <CampaignSettingsDialog
+                campaign={scope.campaign}
+                onDeleted={() => onSelectCampaign(ALL_CAMPAIGNS)}
+              />
+            )}
+            <LiveBadge status={status} />
+          </div>
         </div>
 
         {/* Campaign tabs — scroll horizontally on small screens */}

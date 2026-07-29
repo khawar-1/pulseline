@@ -1,10 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
 import { AD_SOURCE_LABEL, PRACTICE_LABEL } from "@/lib/pipeline";
 import { AD_SOURCES, PRACTICE_TYPES, type AdSource, type PracticeType } from "@/lib/supabase/types";
+
+/**
+ * `createPortal` needs `document.body`, which doesn't exist during SSR --
+ * this is the standard "has this hydrated on the client yet" check.
+ * Deliberately not `useState` + `useEffect(() => setMounted(true), [])`:
+ * that's the same idea but calls setState synchronously inside an effect,
+ * which triggers an extra render pass and this project's stricter
+ * react-hooks/set-state-in-effect lint rule. useSyncExternalStore gives the
+ * server/client snapshots directly with no state or effect involved.
+ */
+const noopSubscribe = () => () => {};
+function useMounted(): boolean {
+  return useSyncExternalStore(noopSubscribe, () => true, () => false);
+}
 
 /**
  * Campaign creation, for the account manager.
@@ -23,11 +37,7 @@ export function NewCampaignDialog({ onCreated }: { onCreated?: (campaignId: stri
   /** Set right after a successful create — shows the "wire it to a form" step instead of just closing. */
   const [created, setCreated] = useState<{ id: string; practiceName: string } | null>(null);
   const [copied, setCopied] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useMounted();
 
   const [practiceName, setPracticeName] = useState("");
   const [practiceType, setPracticeType] = useState<PracticeType>("dermatology");

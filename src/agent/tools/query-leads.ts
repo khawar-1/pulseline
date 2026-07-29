@@ -17,7 +17,7 @@ import { toolResult } from "./shared";
  * several KB per lead and would blow up context on a 20-row result.
  */
 export const queryLeads = tool(
-  async ({ campaign_id, stage, practice_type, min_score, needs_work, limit }) => {
+  async ({ campaign_id, stage, practice_type, min_score, needs_work, order_by, limit }) => {
     let query = supabaseAdmin()
       .from("leads")
       .select("id, campaign_id, parsed, score, score_reasoning, stage, created_at, campaigns!inner(practice_name, practice_type)");
@@ -31,10 +31,17 @@ export const queryLeads = tool(
     // scored, plus anything scored but never contacted.
     if (needs_work) query = query.in("stage", ["new", "scored"]);
 
-    const { data, error } = await query
-      .order("score", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false })
-      .limit(limit ?? 15);
+    // Default ("score") is the work-priority view: highest booking likelihood
+    // first. That silently hides genuinely recent leads with a lower score
+    // once there are more than `limit` higher-scored ones ahead of them — use
+    // "recent" for any question about what just came in, the latest
+    // submission, etc. The two are not interchangeable.
+    query =
+      order_by === "recent"
+        ? query.order("created_at", { ascending: false })
+        : query.order("score", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false });
+
+    const { data, error } = await query.limit(limit ?? 15);
 
     if (error) {
       return toolResult({ ok: false, error: `Query failed: ${error.message}` });
@@ -90,6 +97,15 @@ export const queryLeads = tool(
         .boolean()
         .optional()
         .describe("Only leads still at 'new' or 'scored', i.e. not yet contacted."),
+      order_by: z
+        .enum(["score", "recent"])
+        .optional()
+        .describe(
+          "'score' (default) is the work-priority view, highest first — use for 'what " +
+            "should I work on'. 'recent' sorts by created_at descending — use for any " +
+            "'most recent' / 'latest' / 'just came in' question. These give different " +
+            "results and are not interchangeable.",
+        ),
       limit: z.number().min(1).max(50).optional().describe("Default 15."),
     }),
   },
