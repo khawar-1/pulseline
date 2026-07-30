@@ -63,6 +63,10 @@ export const queryLeads = tool(
         practice_type: row.campaigns?.practice_type ?? null,
         stage: row.stage,
         score: row.score,
+        // A null score means either "not scored yet" or "escalated, no
+        // score is meaningful" (see score_lead) -- expose the flag directly
+        // so a caller doesn't have to guess which from score alone.
+        needs_human_review: row.parsed?.needs_human_review ?? null,
         // Name and reason only. Enough to triage, without pulling the whole
         // parsed blob or the raw form payload into context.
         name: row.parsed?.full_name ?? null,

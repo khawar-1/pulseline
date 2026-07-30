@@ -96,6 +96,14 @@ export const scoreLead = tool(
       campaign.practice_type,
     );
 
+    // An escalated lead has no meaningful score per the playbook, so the
+    // persisted value is forced to null in code rather than trusted to
+    // whatever number the model submitted. That is what makes null mean
+    // exclusively "not scored or escalated" everywhere downstream, and frees
+    // every real number -- including 0 -- to mean an actual score again.
+    const isEscalated = needs_human_review ?? false;
+    const persistedScore = isEscalated ? null : finalScore;
+
     const parsed: ParsedLead = {
       ...lead.parsed,
       intent: intent ?? lead.parsed.intent,
@@ -109,7 +117,7 @@ export const scoreLead = tool(
 
     const { error } = await supabaseAdmin()
       .from("leads")
-      .update({ score: finalScore, score_reasoning: reasoning, parsed })
+      .update({ score: persistedScore, score_reasoning: reasoning, parsed })
       .eq("id", lead_id);
 
     if (error) return toolError(`Failed to save score: ${error.message}`);
@@ -124,7 +132,7 @@ export const scoreLead = tool(
       practice: campaign.practice_name,
       practice_type: campaign.practice_type,
       submitted_score: score,
-      final_score: finalScore,
+      final_score: persistedScore,
       caps_applied: applied,
       stage: advanced.moved ? advanced.to : lead.stage,
       needs_human_review: needs_human_review ?? false,

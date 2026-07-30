@@ -340,6 +340,63 @@ async function main() {
     return `duplicate (source, dedup_key) short-circuited to the same row; sendWhatsApp skipped cleanly`;
   });
 
+  // -- 9 -------------------------------------------------------------------
+  // score_lead must persist score=null for an escalated lead rather than
+  // trusting the model's own number, so a real 0 can never be confused with
+  // "flagged, not scored" -- and draft_followup must report the escalation,
+  // not a generic "not scored" error, when it later touches that lead.
+  await check("9. Escalated leads persist score=null and draft_followup reports the real reason", async () => {
+    const created = await callTool(ingestLead, {
+      campaign_id: workCampaignId,
+      raw_payload: {
+        field_data: [
+          { name: "full_name", values: ["Verification Escalation Fixture"] },
+          { name: "phone_number", values: ["+13125550199"] },
+          {
+            name: "reason_for_visit",
+            values: ["Chest tightness and shortness of breath during light activity."],
+          },
+        ],
+      },
+    });
+    assert(created.ok, `ingest_lead failed: ${created.error}`);
+    const escalatedLeadId = created.lead_id as string;
+
+    const scoreOut = await callTool(scoreLead, {
+      lead_id: escalatedLeadId,
+      // Deliberately non-zero, to prove the persisted null comes from the
+      // escalation flag and not from the model happening to choose 0.
+      score: 40,
+      reasoning:
+        "Verification fixture: acute symptoms described, no score is meaningful, escalating to a human.",
+      playbook_signals: ["acute symptoms described in form text"],
+      needs_human_review: true,
+    });
+    assert(scoreOut.ok, `score_lead returned an error: ${scoreOut.error}`);
+
+    const { data } = await db.from("leads").select("score").eq("id", escalatedLeadId).single();
+    const persistedScore = (data as { score: number | null }).score;
+    assert(
+      persistedScore === null,
+      `expected persisted score to be null for an escalated lead, got ${persistedScore}`,
+    );
+
+    const draftOut = await callTool(draftFollowup, {
+      lead_id: escalatedLeadId,
+      channel: "sms",
+      content: "This should never be written.",
+      compliance_verdict: "pass",
+      compliance_notes: "Fixture — should never be reached.",
+    });
+    assert(draftOut.ok === false, "draft_followup wrote a message for an escalated lead");
+    assert(
+      draftOut.escalate_to_human === true,
+      "draft_followup did not report escalate_to_human — the null-score guard may be masking the real reason",
+    );
+
+    return `score persisted as null despite submitted_score=${scoreOut.submitted_score}; draft_followup correctly reported escalation`;
+  });
+
   // -- summary -------------------------------------------------------------
   const passed = results.filter((r) => r.ok).length;
   console.log("\n" + "=".repeat(60));

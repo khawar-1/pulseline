@@ -46,20 +46,25 @@ export const draftFollowup = tool(
       );
     }
 
-    if (lead.score === null) {
-      return toolError(
-        `Lead ${lead_id} has not been scored. Call score_lead before drafting outreach.`,
-        { required_tool: "score_lead" },
-      );
-    }
-
-    // Guard 3 — acute symptom escalation. Hard stop.
+    // Guard 3 — acute symptom escalation. Hard stop. Checked before the
+    // null-score guard below: escalated leads are persisted with score=null
+    // on purpose (see score_lead), so if this ran second the generic
+    // "not scored" error would mask the real reason and could send an
+    // autonomous session down the wrong path (re-score-and-retry instead of
+    // stop-and-escalate).
     if (lead.parsed.needs_human_review) {
       return toolError(
         `Lead ${lead_id} was flagged for human review because the submission describes ` +
           `acute symptoms. Automated outreach is not permitted on this lead. Report it ` +
           `to the account manager for a person to handle.`,
         { escalate_to_human: true },
+      );
+    }
+
+    if (lead.score === null) {
+      return toolError(
+        `Lead ${lead_id} has not been scored. Call score_lead before drafting outreach.`,
+        { required_tool: "score_lead" },
       );
     }
 

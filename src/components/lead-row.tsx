@@ -200,6 +200,19 @@ export function LeadRow({
             className="overflow-hidden"
           >
             <div className="space-y-3.5 border-t border-line/60 bg-paper px-4 py-4">
+              {/* Reason for visit -- the collapsed row only ever shows a
+                  single-line truncation of this, and it's otherwise absent
+                  from the expanded fields below, so a manager had no way to
+                  read a patient's full submitted message anywhere in the UI. */}
+              {parsed?.reason && (
+                <div>
+                  <p className="label mb-1">Reason for visit</p>
+                  <p className="whitespace-pre-wrap text-[0.8125rem] leading-relaxed text-ink/80">
+                    {parsed.reason}
+                  </p>
+                </div>
+              )}
+
               {/* Fields grid */}
               <dl className="grid grid-cols-2 gap-x-6 gap-y-2.5">
                 <Field label="Contact"   value={parsed?.email ?? parsed?.phone ?? "—"} mono />
@@ -208,10 +221,13 @@ export function LeadRow({
                 <Field label="Deadline"  value={parsed?.deadline ?? "—"} />
               </dl>
 
-              {/* Score reasoning */}
-              {lead.score !== null && (
+              {/* Score reasoning -- also shown when score is null but the
+                  lead is blocked, since escalated leads are persisted with
+                  no score on purpose and the model's required explanation
+                  would otherwise be invisible in the UI. */}
+              {(lead.score !== null || blocked) && (
                 <div className="rounded-lg border border-line bg-panel px-3 py-2.5">
-                  <p className="label mb-1.5">{scoreLabel(lead.score)} — why</p>
+                  <p className="label mb-1.5">{blocked ? "Flagged" : scoreLabel(lead.score)} — why</p>
                   <p className="text-[0.8125rem] leading-relaxed text-ink/80">
                     {lead.score_reasoning ?? "No reasoning recorded."}
                   </p>
